@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#0B0F19] text-gray-100 antialiased;
+  }
+  * {
+    @apply border-gray-800;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-accent hover:bg-accent-hover text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-accent/50;
+  }
+  .btn-secondary {
+    @apply bg-gray-800 hover:bg-gray-700 text-gray-200 font-medium py-2 px-4 rounded-lg border border-gray-700 hover:border-gray-600 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none;
+  }
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-500 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-red-500/50;
+  }
+  .btn-ghost {
+    @apply text-gray-400 hover:text-gray-100 hover:bg-gray-800 font-medium py-2 px-3 rounded-lg transition-all duration-200 focus:outline-none;
+  }
+  .input-field {
+    @apply w-full bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-500 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent/50 transition-colors duration-200;
+  }
+  .card {
+    @apply bg-gray-900 rounded-xl border border-gray-800 p-6;
+  }
+  .card-hover {
+    @apply bg-gray-900 rounded-xl border border-gray-800 p-6 hover:border-accent/30 hover:shadow-lg hover:shadow-accent/5 transition-all duration-200;
+  }
+  .badge {
+    @apply text-xs font-semibold px-2.5 py-0.5 rounded-full;
+  }
+  .badge-client {
+    @apply badge bg-emerald-500/15 text-emerald-400 border border-emerald-500/20;
+  }
+  .badge-coach {
+    @apply badge bg-blue-500/15 text-blue-400 border border-blue-500/20;
+  }
+  .badge-admin {
+    @apply badge bg-purple-500/15 text-purple-400 border border-purple-500/20;
+  }
+  .skeleton {
+    @apply animate-pulse bg-gray-800 rounded;
+  }
+}

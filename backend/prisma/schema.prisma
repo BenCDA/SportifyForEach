@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CLIENT
+  COACH
+  ADMIN
+}
+
+model User {
+  id             String         @id @default(uuid())
+  email          String         @unique
+  passwordHash   String
+  firstName      String
+  lastName       String
+  role           Role           @default(CLIENT)
+  createdAt      DateTime       @default(now())
+  coachProfile   CoachProfile?
+  sessions       Session[]      @relation("CoachSessions")
+  bookings       Booking[]
+  refreshTokens  RefreshToken[]
+}
+
+model CoachProfile {
+  id        String  @id @default(uuid())
+  userId    String  @unique
+  bio       String?
+  specialty String?
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id          String    @id @default(uuid())
+  coachId     String
+  title       String
+  description String?
+  startAt     DateTime
+  durationMin Int
+  capacity    Int
+  location    String
+  createdAt   DateTime  @default(now())
+  coach       User      @relation("CoachSessions", fields: [coachId], references: [id], onDelete: Cascade)
+  bookings    Booking[]
+
+  @@index([startAt])
+}
+
+model Booking {
+  id        String   @id @default(uuid())
+  sessionId String
+  clientId  String
+  createdAt DateTime @default(now())
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  client    User     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, clientId])
+  @@index([clientId, sessionId])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

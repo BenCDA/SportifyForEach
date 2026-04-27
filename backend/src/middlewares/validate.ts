@@ -1,0 +1,21 @@
+import { Request, Response, NextFunction } from 'express';
+import { AnyZodObject, ZodError } from 'zod';
+
+export function validate(schema: AnyZodObject) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    try {
+      schema.parse({
+        body: req.body,
+        query: req.query,
+        params: req.params,
+      });
+      next();
+    } catch (err) {
+      if (err instanceof ZodError) {
+        next(err);
+      } else {
+        next(err);
+      }
+    }
+  };
+}
