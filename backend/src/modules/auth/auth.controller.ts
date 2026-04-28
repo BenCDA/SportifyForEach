@@ -31,6 +31,16 @@ export async function refreshHandler(req: Request, res: Response, next: NextFunc
   }
 }
 
+export async function logoutHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { refreshToken } = req.body as { refreshToken?: string };
+    if (refreshToken) await authService.logout(refreshToken);
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function meHandler(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const result = await authService.getMe(req.user!.userId);

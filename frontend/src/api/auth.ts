@@ -34,5 +34,8 @@ export const authApi = {
   login: (data: { email: string; password: string }) =>
     apiClient.post<AuthResponse>('/auth/login', data),
 
+  logout: (refreshToken: string) =>
+    apiClient.post('/auth/logout', { refreshToken }),
+
   me: () => apiClient.get<{ data: User }>('/auth/me'),
 };

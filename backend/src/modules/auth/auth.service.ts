@@ -120,6 +120,17 @@ export async function refresh(token: string) {
   return { accessToken, refreshToken: newRefreshToken };
 }
 
+export async function logout(token: string): Promise<void> {
+  const tokenHash = hashToken(token);
+  const stored = await prisma.refreshToken.findUnique({ where: { tokenHash } });
+  if (stored && stored.revokedAt === null) {
+    await prisma.refreshToken.update({
+      where: { id: stored.id },
+      data: { revokedAt: new Date() },
+    });
+  }
+}
+
 export async function getMe(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },

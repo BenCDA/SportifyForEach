@@ -16,6 +16,10 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
   const [loading, setLoading] = useState(true);
 
   const logout = useCallback(() => {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (refreshToken) {
+      authApi.logout(refreshToken).catch(() => undefined);
+    }
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     setUser(null);
