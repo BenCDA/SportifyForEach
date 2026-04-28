@@ -12,8 +12,10 @@ const Home         = lazy(() => import('./pages/Home').then((m) => ({ default: m
 const Sessions     = lazy(() => import('./pages/Sessions').then((m) => ({ default: m.Sessions })));
 const MyBookings   = lazy(() => import('./pages/MyBookings').then((m) => ({ default: m.MyBookings })));
 const CoachPlanning = lazy(() => import('./pages/CoachPlanning').then((m) => ({ default: m.CoachPlanning })));
-const AdminUsers   = lazy(() => import('./pages/AdminUsers').then((m) => ({ default: m.AdminUsers })));
-const NotFound     = lazy(() => import('./pages/NotFound').then((m) => ({ default: m.NotFound })));
+const AdminUsers    = lazy(() => import('./pages/AdminUsers').then((m) => ({ default: m.AdminUsers })));
+const AdminSessions = lazy(() => import('./pages/AdminSessions').then((m) => ({ default: m.AdminSessions })));
+const Profile       = lazy(() => import('./pages/Profile').then((m) => ({ default: m.Profile })));
+const NotFound      = lazy(() => import('./pages/NotFound').then((m) => ({ default: m.NotFound })));
 
 function PageFallback() {
   return (
@@ -51,8 +53,11 @@ export default function App() {
                 </Route>
 
                 <Route element={<RoleRoute roles={['ADMIN']} />}>
-                  <Route path="/admin/users" element={<AdminUsers />} />
+                  <Route path="/admin/users"     element={<AdminUsers />} />
+                  <Route path="/admin/sessions"  element={<AdminSessions />} />
                 </Route>
+
+                <Route path="/profile" element={<Profile />} />
               </Route>
             </Route>
 

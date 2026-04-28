@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, ChevronDown } from 'lucide-react';
+import { LogOut, ChevronDown, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { Avatar } from './Avatar';
 import { cn } from '../lib/utils';
 
 interface NavLinkProps { to: string; children: React.ReactNode }
@@ -46,7 +47,6 @@ export function Navbar() {
   }, []);
 
   const handleLogout = () => { logout(); navigate('/login'); };
-  const initials = user ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase() : '';
 
   return (
     <nav
@@ -76,7 +76,7 @@ export function Navbar() {
               )}
               {user.role === 'ADMIN' && (
                 <>
-                  <NavLink to="/sessions">Séances</NavLink>
+                  <NavLink to="/admin/sessions">Séances</NavLink>
                   <NavLink to="/admin/users">Utilisateurs</NavLink>
                 </>
               )}
@@ -88,11 +88,12 @@ export function Navbar() {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen((o) => !o)}
-                className="flex items-center gap-2 focus:outline-none"
+                className="flex items-center gap-2 focus:outline-none group"
               >
-                <span className="w-7 h-7 bg-ink text-paper rounded-full flex items-center justify-center font-mono text-[10px] font-medium select-none">
-                  {initials}
-                </span>
+                <div className="relative">
+                  <Avatar user={user} size="sm" />
+                  <span className="absolute -bottom-0.5 left-0 right-0 h-px bg-ink scale-x-0 group-hover:scale-x-100 transition-transform duration-150" />
+                </div>
                 <ChevronDown
                   className={cn(
                     'w-3.5 h-3.5 text-muted transition-transform duration-200',
@@ -112,7 +113,15 @@ export function Navbar() {
                       {user.role}
                     </p>
                   </div>
-                  <div className="p-1.5">
+                  <div className="p-1.5 space-y-0.5">
+                    <Link
+                      to="/profile"
+                      onClick={() => setDropdownOpen(false)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-muted hover:bg-ink/[0.03] hover:text-ink transition-colors duration-150 font-mono uppercase tracking-[0.08em]"
+                    >
+                      <User className="w-3.5 h-3.5" strokeWidth={1.5} />
+                      Mon profil
+                    </Link>
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-accent hover:bg-accent/5 transition-colors duration-150 font-mono uppercase tracking-[0.08em]"

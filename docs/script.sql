@@ -16,6 +16,7 @@ CREATE TABLE "User" (
     "firstName"    TEXT         NOT NULL,
     "lastName"     TEXT         NOT NULL,
     "role"         "Role"       NOT NULL DEFAULT 'CLIENT',
+    "avatarUrl"    TEXT,
     "createdAt"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
@@ -46,21 +47,23 @@ ALTER TABLE "CoachProfile"
 -- Table : Session
 -- ──────────────────────────────────────────────
 CREATE TABLE "Session" (
-    "id"           TEXT         NOT NULL,
-    "coachId"      TEXT         NOT NULL,
-    "title"        TEXT         NOT NULL,
-    "description"  TEXT,
-    "requirements" TEXT,
-    "startAt"      TIMESTAMP(3) NOT NULL,
-    "durationMin"  INTEGER      NOT NULL,
-    "capacity"     INTEGER      NOT NULL,
-    "locationName" TEXT         NOT NULL DEFAULT '',
-    "address"      TEXT         NOT NULL DEFAULT '',
-    "city"         TEXT         NOT NULL DEFAULT '',
-    "postalCode"   TEXT         NOT NULL DEFAULT '',
-    "latitude"     DOUBLE PRECISION,
-    "longitude"    DOUBLE PRECISION,
-    "createdAt"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "id"             TEXT             NOT NULL,
+    "coachId"        TEXT             NOT NULL,
+    "title"          TEXT             NOT NULL,
+    "sport"          TEXT,
+    "description"    TEXT,
+    "requirements"   TEXT,
+    "startAt"        TIMESTAMP(3)     NOT NULL,
+    "durationMin"    INTEGER          NOT NULL,
+    "capacity"       INTEGER          NOT NULL,
+    "locationName"   TEXT             NOT NULL DEFAULT '',
+    "address"        TEXT             NOT NULL DEFAULT '',
+    "city"           TEXT             NOT NULL DEFAULT '',
+    "postalCode"     TEXT             NOT NULL DEFAULT '',
+    "latitude"       DOUBLE PRECISION,
+    "longitude"      DOUBLE PRECISION,
+    "coverImageUrl"  TEXT,
+    "createdAt"      TIMESTAMP(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
 );

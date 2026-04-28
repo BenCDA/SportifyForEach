@@ -2,6 +2,8 @@ import React from 'react';
 import { MapPin, Clock, ArrowRight } from 'lucide-react';
 import { cn, formatSessionDate } from '../lib/utils';
 import { Session } from '../api/sessions';
+import { Avatar } from './Avatar';
+import { getSportImage } from '../constants/sportImages';
 
 interface SessionCardProps {
   session: Session;
@@ -20,32 +22,43 @@ export function SessionCard({
   onViewParticipants,
   booking = false,
 }: Readonly<SessionCardProps>) {
-  const isFull = session.bookingsCount >= session.capacity;
+  const isFull    = session.bookingsCount >= session.capacity;
   const spotsLeft = session.capacity - session.bookingsCount;
-  const watermark = session.title.split(' ')[0].toUpperCase();
+  const coverUrl  = getSportImage(session.sport, session.coverImageUrl);
 
   return (
-    <div className="group relative bg-surface border border-ink/10 overflow-hidden transition-colors duration-200 hover:border-ink/25">
-      {/* Watermark */}
-      <span
-        aria-hidden
-        className="absolute -bottom-3 -right-2 font-serif italic text-[6rem] leading-none text-ink/[0.04] select-none pointer-events-none whitespace-nowrap"
-      >
-        {watermark}
-      </span>
+    <div className="group relative bg-surface border border-ink/10 overflow-hidden transition-colors duration-200 hover:border-ink/25 flex flex-col">
+      {/* Cover image */}
+      <div className="relative h-48 overflow-hidden bg-ink/5">
+        <img
+          src={coverUrl}
+          alt={session.sport ?? session.title}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+          loading="lazy"
+        />
+        {/* Sport overlay label */}
+        {session.sport && (
+          <div className="absolute inset-0 bg-black/20 flex items-end p-4 pointer-events-none">
+            <span className="font-serif italic text-white/90 text-lg leading-none">
+              {session.sport}
+            </span>
+          </div>
+        )}
+        {/* Full badge */}
+        {isFull && (
+          <span className="absolute top-3 right-3 font-mono text-[9px] uppercase tracking-[0.1em] bg-accent text-white px-2 py-1">
+            Complet
+          </span>
+        )}
+      </div>
 
-      <div className="relative p-5 flex flex-col gap-3">
+      <div className="relative p-5 flex flex-col gap-3 flex-1">
         {/* Title + availability */}
         <div className="flex items-start justify-between gap-3">
           <h3 className="session-title-hover font-sans font-semibold text-base text-ink leading-snug">
             {session.title}
           </h3>
-          <span
-            className={cn(
-              'shrink-0 font-mono text-[11px] tabular-nums',
-              isFull ? 'text-accent' : 'text-muted',
-            )}
-          >
+          <span className={cn('shrink-0 font-mono text-[11px] tabular-nums', isFull ? 'text-accent' : 'text-muted')}>
             {String(session.bookingsCount).padStart(2, '0')}/{String(session.capacity).padStart(2, '0')}
           </span>
         </div>
@@ -59,10 +72,14 @@ export function SessionCard({
             <MapPin className="w-3 h-3" strokeWidth={1.5} />
             {session.locationName} · {session.city}
           </p>
-          <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-faint flex items-center gap-1.5">
-            <Clock className="w-3 h-3" strokeWidth={1.5} />
-            ENCADRÉ PAR {session.coach.firstName.toUpperCase()} {session.coach.lastName.toUpperCase()}
-          </p>
+          {/* Coach row with avatar */}
+          <div className="flex items-center gap-2 pt-1">
+            <Avatar user={session.coach} size="sm" />
+            <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-faint flex items-center gap-1">
+              <Clock className="w-3 h-3" strokeWidth={1.5} />
+              {session.coach.firstName.toUpperCase()} {session.coach.lastName.toUpperCase()}
+            </p>
+          </div>
         </div>
 
         {/* Capacity bar */}

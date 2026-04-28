@@ -19,6 +19,10 @@ async function main(): Promise<void> {
   const coachHash  = await bcrypt.hash('Coach123!',  BCRYPT_COST);
   const clientHash = await bcrypt.hash('Client123!', BCRYPT_COST);
 
+  // DiceBear deterministic avatars (B&W shapes style)
+  const dicebear = (seed: string) =>
+    `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(seed)}&backgroundColor=1a1a1a&textColor=ffffff`;
+
   const admin = await prisma.user.upsert({
     where: { email: 'admin@sportify.fr' },
     update: {},
@@ -28,6 +32,7 @@ async function main(): Promise<void> {
       firstName: 'Admin',
       lastName: 'System',
       role: Role.ADMIN,
+      avatarUrl: dicebear('Admin System'),
     },
   });
 
@@ -40,6 +45,7 @@ async function main(): Promise<void> {
       firstName: 'Marie',
       lastName: 'Dupont',
       role: Role.COACH,
+      avatarUrl: dicebear('Marie Dupont'),
       coachProfile: {
         create: {
           bio: 'Coach certifiée yoga et pilates depuis 8 ans. Passionnée par le bien-être et la pleine conscience.',
@@ -58,6 +64,7 @@ async function main(): Promise<void> {
       firstName: 'Jean',
       lastName: 'Martin',
       role: Role.COACH,
+      avatarUrl: dicebear('Jean Martin'),
       coachProfile: {
         create: {
           bio: 'Expert CrossFit, boxe et HIIT. Ancien compétiteur, coach depuis 5 ans.',
@@ -76,6 +83,7 @@ async function main(): Promise<void> {
       firstName: 'Alice',
       lastName: 'Bernard',
       role: Role.CLIENT,
+      avatarUrl: dicebear('Alice Bernard'),
     },
   });
 
@@ -114,6 +122,7 @@ async function main(): Promise<void> {
       id: SESSION_IDS.YOGA_PAST,
       coachId: coach1.id,
       title: 'Yoga du matin — Débutants',
+      sport: 'Yoga',
       description: 'Séance de yoga douce pour bien commencer la journée. Convient à tous les niveaux.',
       requirements: 'Tapis de yoga recommandé. Vêtements souples.',
       startAt: past(3),
@@ -135,6 +144,7 @@ async function main(): Promise<void> {
       id: SESSION_IDS.YOGA_FUTURE,
       coachId: coach1.id,
       title: 'Yoga avancé',
+      sport: 'Yoga',
       description: 'Postures avancées et pranayama. Pour pratiquants réguliers.',
       requirements: 'Expérience yoga requise (6 mois minimum). Tapis et blocs de yoga.',
       startAt: future(2),
@@ -156,6 +166,7 @@ async function main(): Promise<void> {
       id: SESSION_IDS.CROSSFIT_FULL,
       coachId: coach2.id,
       title: 'CrossFit Intensif',
+      sport: 'Crossfit',
       description: 'Circuit training haute intensité. Cardio + force fonctionnelle.',
       requirements: 'Niveau intermédiaire requis. Chaussures de sport stables obligatoires.',
       startAt: future(1),
@@ -177,6 +188,7 @@ async function main(): Promise<void> {
       id: SESSION_IDS.BOXING,
       coachId: coach2.id,
       title: 'Boxe Cardio',
+      sport: 'Boxe',
       description: 'Initiation à la boxe cardio. Travail sur sac et mitaines.',
       requirements: 'Aucun prérequis. Gants de boxe fournis ou apporter les vôtres.',
       startAt: future(4),
@@ -198,6 +210,7 @@ async function main(): Promise<void> {
       id: SESSION_IDS.PILATES,
       coachId: coach1.id,
       title: 'Pilates Corps & Esprit',
+      sport: 'Pilates',
       description: 'Renforcement musculaire profond et équilibre postural.',
       requirements: 'Tapis de sol. Chaussettes antidérapantes recommandées.',
       startAt: future(7),
@@ -219,6 +232,7 @@ async function main(): Promise<void> {
       id: SESSION_IDS.CROSSFIT_PAST,
       coachId: coach2.id,
       title: 'CrossFit Débutants',
+      sport: 'Crossfit',
       description: 'Introduction au CrossFit. Apprentissage des mouvements fondamentaux.',
       requirements: 'Aucun prérequis. Tenir à jour votre carnet d\'entraînement.',
       startAt: past(7),

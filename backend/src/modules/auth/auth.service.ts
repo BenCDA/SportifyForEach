@@ -12,12 +12,12 @@ function hashToken(token: string): string {
 
 function sanitizeUser(user: {
   id: string; email: string; firstName: string;
-  lastName: string; role: string; createdAt: Date;
+  lastName: string; role: string; avatarUrl?: string | null; createdAt: Date;
 }) {
   return {
     id: user.id, email: user.email,
     firstName: user.firstName, lastName: user.lastName,
-    role: user.role, createdAt: user.createdAt,
+    role: user.role, avatarUrl: user.avatarUrl ?? null, createdAt: user.createdAt,
   };
 }
 

@@ -67,6 +67,51 @@
 **Références :** Linear, Vercel, Stripe, Whoop — minimalisme éditorial, magazine sportif haut de gamme.
 **Raison :** Aucun gradient, aucun glassmorphisme, `rounded-none` sur tous les boutons, inputs underline-only. Cohérence immédiate sur portfolio de studio : la hiérarchie typographique remplace l'ornement visuel. Le rouge `#E63946` accent est utilisé uniquement pour les erreurs, la disponibilité complète et les badges ADMIN — jamais comme décoration.
 
+### 17. Modélisation du Rôle : enum PostgreSQL vs table dédiée
+
+**Décision :** Rôle modélisé comme enum PostgreSQL (`CLIENT | COACH | ADMIN`) sur le modèle `User`, sans table `Role` séparée.
+
+**Justification technique :**
+
+| Critère | Enum PostgreSQL | Table Role séparée |
+|---------|----------------|--------------------|
+| Intégrité référentielle | ✅ Garantie par la contrainte de type au niveau moteur | ✅ Garantie par FK + contrainte UNIQUE |
+| Validation à l'insertion | ✅ Rejet immédiat d'une valeur invalide par le SGBD | ✅ Via FK (erreur 23503) |
+| Performances | ✅ Aucune jointure nécessaire | ⚠️ JOIN systématique sur chaque requête User |
+| Évolutivité (ajout de rôle) | ⚠️ Migration DDL requise (`ALTER TYPE ... ADD VALUE`) | ✅ Simple INSERT |
+| Lisibilité du schéma | ✅ Un champ, valeur auto-documentée | ⚠️ Indirection via FK |
+| Pertinence pour ce domaine | ✅ 3 rôles fixes, domaine fermé, aucun attribut associé au rôle | — |
+
+**Conclusion :** Dans un système à rôles fixes sans attributs propres au rôle (pas de permissions dynamiques, pas de label multilingue), l'enum est la modélisation idiomatic PostgreSQL. Elle garantit les mêmes contraintes d'intégrité qu'une table séparée avec moins de complexité. Si les rôles devaient devenir configurables (RBAC fin), une migration vers une table `Role` serait envisageable.
+
+**Contraintes d'intégrité équivalentes :**
+- `NOT NULL` + type enum → valeur toujours définie et valide
+- Zod validation côté application (`z.enum(['CLIENT','COACH','ADMIN'])`) → double filet
+- Tests d'intégration vérifient le 403 sur rôle insuffisant
+
+---
+
+### 18. Stratégie médias (avatars & covers de séances)
+
+**Décision :** Stockage local dans `backend/uploads/` (avatars 512×512, covers 1600×900) avec traitement via `sharp` (resize + conversion webp). Nommage hashé `{id}-{timestamp}.webp`. Migration prévue vers S3/R2 en production.
+
+**Sécurité :**
+- Validation MIME côté serveur (`multer` `fileFilter` : jpeg/png/webp uniquement)
+- Limites de taille : 2 Mo avatars, 5 Mo covers
+- Nommage jamais basé sur le nom original du fichier (prévention path traversal)
+- `path.resolve` + vérification `startsWith(UPLOADS_BASE)` avant toute suppression
+- Headers `Cache-Control: public, max-age=31536000, immutable` (noms hashés = immuables)
+- CORP (`cross-origin-resource-policy: cross-origin`) activé pour les assets statiques
+
+**Images de sport :** Mapping `sport → URL Unsplash désaturée (sat=-100)` côté frontend. La séance hérite de l'image du sport si aucune cover custom n'est uploadée. Fallback : image gym générique.
+
+**Migration prod vers S3 :**
+- Remplacer `processAvatar`/`processSessionCover` par upload vers S3 via `@aws-sdk/client-s3`
+- L'URL stockée en DB passe de `/uploads/avatars/xxx.webp` à `https://cdn.exemple.com/avatars/xxx.webp`
+- Aucun changement frontend requis (URL opaque dans les deux cas)
+
+---
+
 ## Ambiguïtés résolues
 
 | Ambiguïté | Décision prise |

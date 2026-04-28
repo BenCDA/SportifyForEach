@@ -2,13 +2,14 @@ import { Role } from '@prisma/client';
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../utils/AppError';
 
-function sanitizeUser(user: { id: string; email: string; firstName: string; lastName: string; role: string; createdAt: Date }) {
+function sanitizeUser(user: { id: string; email: string; firstName: string; lastName: string; role: string; avatarUrl?: string | null; createdAt: Date }) {
   return {
     id: user.id,
     email: user.email,
     firstName: user.firstName,
     lastName: user.lastName,
     role: user.role,
+    avatarUrl: user.avatarUrl ?? null,
     createdAt: user.createdAt,
   };
 }

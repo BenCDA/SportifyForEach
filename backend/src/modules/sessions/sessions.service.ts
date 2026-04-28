@@ -12,6 +12,7 @@ export interface LocationInput {
 
 export interface CreateSessionInput extends LocationInput {
   title:        string;
+  sport?:       string;
   description?: string;
   requirements?: string;
   startAt:      string;
@@ -20,21 +21,26 @@ export interface CreateSessionInput extends LocationInput {
 }
 
 function formatSession(s: {
-  id: string; coachId: string; title: string; description: string | null;
-  requirements: string | null;
+  id: string; coachId: string; title: string; sport: string | null;
+  description: string | null; requirements: string | null;
   startAt: Date; durationMin: number; capacity: number;
   locationName: string; address: string; city: string; postalCode: string;
   latitude: number | null; longitude: number | null;
+  coverImageUrl: string | null;
   createdAt: Date;
-  coach: { id: string; firstName: string; lastName: string; email: string };
+  coach: { id: string; firstName: string; lastName: string; email: string; avatarUrl?: string | null };
   _count: { bookings: number };
 }) {
   return {
-    id: s.id, title: s.title, description: s.description, requirements: s.requirements,
+    id: s.id, title: s.title, sport: s.sport,
+    description: s.description, requirements: s.requirements,
     startAt: s.startAt, durationMin: s.durationMin, capacity: s.capacity,
     locationName: s.locationName, address: s.address, city: s.city,
     postalCode: s.postalCode, latitude: s.latitude, longitude: s.longitude,
-    createdAt: s.createdAt, coach: s.coach, bookingsCount: s._count.bookings,
+    coverImageUrl: s.coverImageUrl,
+    createdAt: s.createdAt,
+    coach: { ...s.coach, avatarUrl: s.coach.avatarUrl ?? null },
+    bookingsCount: s._count.bookings,
   };
 }
 
@@ -104,6 +110,7 @@ export async function createSession(coachId: string, input: CreateSessionInput) 
     data: {
       coachId,
       title:        input.title,
+      sport:        input.sport || null,
       description:  input.description,
       requirements: input.requirements,
       startAt:      new Date(input.startAt),

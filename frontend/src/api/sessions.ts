@@ -3,6 +3,7 @@ import apiClient from './client';
 export interface Session {
   id: string;
   title: string;
+  sport?: string | null;
   description?: string;
   requirements?: string;
   startAt: string;
@@ -14,8 +15,9 @@ export interface Session {
   postalCode: string;
   latitude?: number;
   longitude?: number;
+  coverImageUrl?: string | null;
   createdAt: string;
-  coach: { id: string; firstName: string; lastName: string; email: string };
+  coach: { id: string; firstName: string; lastName: string; email: string; avatarUrl?: string | null };
   bookingsCount: number;
   participants?: { id: string; firstName: string; lastName: string; email: string }[];
 }
@@ -36,6 +38,7 @@ export interface SessionFilters {
 
 export interface CreateSessionInput {
   title: string;
+  sport?: string;
   description?: string;
   requirements?: string;
   startAt: string;
@@ -62,4 +65,12 @@ export const sessionsApi = {
     apiClient.put<{ data: Session }>(`/sessions/${id}`, data),
 
   delete: (id: string) => apiClient.delete(`/sessions/${id}`),
+
+  uploadCover: (id: string, blob: Blob) => {
+    const fd = new FormData();
+    fd.append('cover', blob, 'cover.webp');
+    return apiClient.post<{ data: { coverImageUrl: string } }>(`/sessions/${id}/cover`, fd);
+  },
+
+  deleteCover: (id: string) => apiClient.delete(`/sessions/${id}/cover`),
 };

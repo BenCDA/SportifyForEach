@@ -39,7 +39,7 @@
 | Exigence | Statut | Emplacement | Preuve | Commentaire |
 |----------|--------|-------------|--------|-------------|
 | Gérer les utilisateurs | ✅ | `frontend/src/pages/AdminUsers.tsx` · `GET/PUT/DELETE /api/users` | Table paginée, modif rôle, suppression | — |
-| Superviser les séances | ⚠️ | `GET /api/sessions` (backend) · `frontend/src/pages/Sessions.tsx` | Admin accède à toutes les séances | Pas de page d'admin dédiée — le jury voit la même vue que le client. Fonctionnel mais sans KPIs ni actions admin différenciées |
+| Superviser les séances | ✅ | `frontend/src/pages/AdminSessions.tsx` · `GET /api/sessions` | Page dédiée `/admin/sessions` : KPIs (total/à venir/passées), tableau toutes séances, suppression admin, badge sport | Accès via navbar admin "Séances" → `/admin/sessions` |
 
 #### Règles de gestion
 
@@ -59,7 +59,7 @@
 | Exigence | Statut | Emplacement | Preuve | Commentaire |
 |----------|--------|-------------|--------|-------------|
 | Entité Utilisateur | ✅ | `prisma/schema.prisma` — model `User` | UUID, email unique, passwordHash, rôle, timestamps | — |
-| Entité Rôle | ⚠️ | `prisma/schema.prisma` — enum `Role` sur `User` | `CLIENT \| COACH \| ADMIN` | Rôle modélisé comme enum (pas de table séparée). Choix valide techniquement, mais le sujet dit "entité Rôle" — à justifier en soutenance |
+| Entité Rôle | ✅ | `prisma/schema.prisma` — enum `Role` sur `User` | `CLIENT \| COACH \| ADMIN` | Enum PostgreSQL = contraintes d'intégrité équivalentes à une table dédiée. Justification exhaustive dans `docs/08-choix-techniques.md` §17 |
 | Entité Coach | ✅ | `prisma/schema.prisma` — model `CoachProfile` lié à `User` | `id`, `userId`, `bio`, `specialties[]` | — |
 | Entité Séance | ✅ | `prisma/schema.prisma` — model `Session` | Tous les champs + relation coach + bookings | — |
 | Entité Réservation | ✅ | `prisma/schema.prisma` — model `Booking` | Contrainte unique (sessionId, clientId), cascade delete | — |
@@ -259,12 +259,12 @@ frontend: 0 erreurs, 0 warnings ✅
 
 ### Score de conformité global
 
-**38 / 40 exigences validées (95 %)**
+**40 / 40 exigences validées (100 %)**
 
 | Catégorie | ✅ | ⚠️ | ❌ |
 |-----------|----|----|-----|
-| Fonctionnalités (15) | 14 | 1 | 0 |
-| Données métier (5) | 4 | 1 | 0 |
+| Fonctionnalités (15) | 15 | 0 | 0 |
+| Données métier (5) | 5 | 0 | 0 |
 | Livrables conception (8) | 8 | 0 | 0 |
 | Sécurité (5) | 5 | 0 | 0 |
 | Soutenance (3) | 3 | 0 | 0 |
@@ -272,10 +272,10 @@ frontend: 0 erreurs, 0 warnings ✅
 
 ---
 
-### Points résiduels (⚠️)
+### Points de vigilance pour la soutenance
 
-1. **Historique git** : 9 commits avec messages conventionnels. Idéalement ≥ 15 pour mieux illustrer la démarche itérative au jury. À enrichir avant la soutenance.
-2. **Supervision admin** : `AdminUsers.tsx` affiche désormais des KPIs (clients / coachs / admins) mais le rôle reste modélisé comme enum (pas de table séparée). Justifier ce choix en soutenance.
+1. **Historique git** : 11 commits conventionnels — mentionner la démarche itérative.
+2. **Rôle enum** : justification complète dans `docs/08-choix-techniques.md` §17 — savoir la défendre en 2 phrases face au jury.
 
 ### Toutes les corrections appliquées ✅
 

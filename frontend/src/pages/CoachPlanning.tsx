@@ -10,10 +10,20 @@ import { SessionCard } from '../components/SessionCard';
 import { SessionCardSkeleton } from '../components/Skeleton';
 import { Pagination } from '../components/Pagination';
 import { LocationAutocomplete } from '../components/LocationAutocomplete';
+import { getSportImage } from '../constants/sportImages';
 import axios from 'axios';
+
+const ALL_SPORTS = [
+  'Arts martiaux', 'Basketball', 'Boxe', 'Course à pied', 'Cross-training',
+  'Crossfit', 'Cyclisme', 'Danse', 'Escalade', 'Fitness', 'Football', 'Golf',
+  'HIIT', 'Méditation', 'MMA', 'Musculation', 'Natation', 'Pilates',
+  'Préparation physique', 'Rééducation', 'Rugby', 'Self-défense', 'Ski',
+  'Stretching', 'Surf', 'Tennis', 'Volleyball', 'Yoga',
+];
 
 const sessionSchema = z.object({
   title:        z.string().min(1, 'Titre requis'),
+  sport:        z.string().optional(),
   description:  z.string().optional(),
   requirements: z.string().optional(),
   startAt:      z.string().min(1, 'Date requise'),
@@ -31,7 +41,7 @@ type SessionFormData = z.infer<typeof sessionSchema>;
 type Participant = { id: string; firstName: string; lastName: string };
 
 const EMPTY: Partial<SessionFormData> = {
-  durationMin: 60, capacity: 10,
+  durationMin: 60, capacity: 10, sport: '',
   locationName: '', address: '', city: '', postalCode: '',
 };
 
@@ -45,7 +55,7 @@ export function CoachPlanning() {
   const [editingSession, setEditingSession] = useState<Session | null>(null);
   const [participants, setParticipants] = useState<Participant[] | null>(null);
 
-  const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } =
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } =
     useForm<SessionFormData>({ resolver: zodResolver(sessionSchema), defaultValues: EMPTY });
 
   const fetchSessions = useCallback(async () => {
@@ -66,7 +76,8 @@ export function CoachPlanning() {
     setEditingSession(session);
     const startAt = new Date(session.startAt).toISOString().slice(0, 16);
     reset({
-      title: session.title, description: session.description ?? '',
+      title: session.title, sport: session.sport ?? '',
+      description: session.description ?? '',
       requirements: session.requirements ?? '', startAt,
       durationMin: session.durationMin, capacity: session.capacity,
       locationName: session.locationName, address: session.address,
@@ -177,6 +188,28 @@ export function CoachPlanning() {
                 <label htmlFor="s-title" className="input-label">Titre *</label>
                 <input {...register('title')} id="s-title" className="input-field" placeholder="Yoga du matin" />
                 {errors.title && <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.08em] text-accent">{errors.title.message}</p>}
+              </div>
+
+              {/* Sport */}
+              <div>
+                <label htmlFor="s-sport" className="input-label">Sport</label>
+                <select {...register('sport')} id="s-sport" className="input-field bg-transparent">
+                  <option value="">— Sélectionner un sport —</option>
+                  {ALL_SPORTS.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                {/* Sport image preview */}
+                {watch('sport') && (
+                  <div className="mt-2 h-20 overflow-hidden rounded-sm border border-ink/10">
+                    <img
+                      src={getSportImage(watch('sport'))}
+                      alt={watch('sport')}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
               </div>
 
               <div>

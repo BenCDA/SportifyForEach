@@ -8,6 +8,7 @@ import { usersApi } from '../api/users';
 import { User } from '../api/auth';
 import { Pagination } from '../components/Pagination';
 import { Skeleton } from '../components/Skeleton';
+import { Avatar } from '../components/Avatar';
 import { cn } from '../lib/utils';
 import axios from 'axios';
 
@@ -154,8 +155,11 @@ export function AdminUsers() {
               ? (['sk-1', 'sk-2', 'sk-3', 'sk-4', 'sk-5'] as const).map((k) => <TableRowSkeleton key={k} />)
               : users.map((user) => (
                 <tr key={user.id} className="border-b border-ink/8 hover:bg-ink/[0.02] transition-colors duration-100">
-                  <td className="px-5 py-4 font-sans font-medium text-sm text-ink">
-                    {user.firstName} {user.lastName}
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-3">
+                      <Avatar user={user} size="sm" />
+                      <span className="font-sans font-medium text-sm text-ink">{user.firstName} {user.lastName}</span>
+                    </div>
                   </td>
                   <td className="px-5 py-4 font-sans text-sm text-muted">{user.email}</td>
                   <td className="px-5 py-4">

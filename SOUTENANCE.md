@@ -34,11 +34,12 @@
 
 ### 5. Administration (2 min)
 - Se connecter en ADMIN
-- Modifier le rôle d'un utilisateur
+- `/admin/sessions` : KPIs total/à venir/passées, supprimer une séance en direct
+- `/admin/users` : modifier le rôle d'un utilisateur, avatars visibles dans le tableau
 - Tenter `PUT /api/sessions/:id` sur la séance d'un autre coach → 403 en live
 
 ### 6. Tests (2 min)
-- `cd backend && npm test` → 47 tests verts en direct
+- `cd backend && npm test` → 62 tests verts en direct
 - Pointer `tests/integration/bookings.routes.test.ts` : scénarios SESSION_FULL, ALREADY_BOOKED, 403
 
 ### 7. CI/CD (1 min)
@@ -65,12 +66,13 @@
 
 ## Points forts à mettre en avant
 
-1. **Sécurité réelle** — Pas de JWT stockés en mémoire serveur pour l'access token, rotation des refresh tokens avec détection de rejeu, rate limiting sur `/auth/login`, bcrypt cost 10, sanitizeUser systématique (jamais de `passwordHash` dans les réponses)
+1. **Sécurité réelle** — Rotation des refresh tokens avec détection de rejeu, rate limiting sur `/auth/login`, bcrypt cost 10, sanitizeUser systématique (jamais de `passwordHash`), upload sécurisé (MIME check, size limit, nommage hashé)
 2. **Transactions atomiques** — La vérification de capacité et de chevauchement horaire est faite dans une seule transaction Prisma → race conditions impossibles même sous charge
 3. **Validation bout en bout** — Zod valide les inputs côté API ET côté front (React Hook Form + Zod resolver) avec les mêmes règles
-4. **47 tests** — Unit (services mockés) + intégration (supertest sur vrais handlers), tous les cas d'erreur métier couverts
+4. **62 tests, 79 % coverage** — Unit (services mockés) + intégration (supertest sur vrais handlers), tous les cas d'erreur métier couverts
 5. **CI/CD complet** — GitHub Actions : lint + typecheck + tests à chaque push, build + push Docker sur GHCR à chaque tag
-6. **UX pensée** — Export ICS depuis la confirmation de réservation, recherche par titre/ville/lieu avec debounce 300 ms, squelettes de chargement, confirmation en 2 étapes
+6. **Médias** — Upload avatar (react-easy-crop crop UI, resize sharp 512×512 webp), images de sport auto via Unsplash désaturé, cover optionnelle par séance, service statique avec headers immuables
+7. **UX pensée** — Export ICS, recherche debounced 300 ms, squelettes de chargement, confirmation 2 étapes, page profil, bannières KPI admin
 
 ---
 

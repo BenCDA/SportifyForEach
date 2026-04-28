@@ -49,3 +49,9 @@ backend/dist-seed/
 
 # TypeScript
 *.tsbuildinfo
+
+# Uploaded media (keep directory structure, ignore files)
+backend/uploads/avatars/*
+backend/uploads/sessions/*
+!backend/uploads/avatars/.gitkeep
+!backend/uploads/sessions/.gitkeep

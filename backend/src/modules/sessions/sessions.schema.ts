@@ -25,6 +25,7 @@ const locationFields = {
 export const createSessionSchema = z.object({
   body: z.object({
     title:        z.string().min(1, 'Titre requis'),
+    sport:        z.string().optional(),
     description:  z.string().optional(),
     requirements: z.string().optional(),
     startAt:      z.string().refine((v) => !Number.isNaN(Date.parse(v)), 'Date invalide'),
@@ -38,6 +39,7 @@ export const updateSessionSchema = z.object({
   params: z.object({ id: z.string().uuid() }),
   body: z.object({
     title:        z.string().min(1).optional(),
+    sport:        z.string().optional(),
     description:  z.string().optional(),
     requirements: z.string().optional(),
     startAt:      z.string().refine((v) => !Number.isNaN(Date.parse(v)), 'Date invalide').optional(),
