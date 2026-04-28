@@ -79,8 +79,8 @@
 | Livrable | Statut | Emplacement | Preuve | Commentaire |
 |----------|--------|-------------|--------|-------------|
 | Diagramme de cas d'utilisation | ✅ | `docs/03-use-cases.md` | Mermaid `graph TD` + séquences détaillées | Couvre tous les acteurs et UC |
-| Diagramme de classes | ✅ | `docs/04-class-diagram.md` | Mermaid `classDiagram` | ⚠️ Incohérence : `CoachProfile.specialty` en string dans le diagramme vs `specialties String[]` en BDD |
-| MCD | ✅ | `docs/05-mcd-mld.md` | Mermaid `erDiagram` | ⚠️ Entité `RefreshToken` absente du MCD ; champ `location` affiché comme string unique vs structure décomposée en BDD |
+| Diagramme de classes | ✅ | `docs/04-class-diagram.md` | Mermaid `classDiagram` | `CoachProfile.specialties[]` + classe `RefreshToken` ajoutés ; synchronisé avec le schéma réel |
+| MCD | ✅ | `docs/05-mcd-mld.md` | Mermaid `erDiagram` | `REFRESH_TOKEN`, champs location décomposés et `specialties[]` ajoutés |
 | User stories | ✅ | `docs/02-user-stories.md` | 15 US avec critères d'acceptation | Couvre les 3 acteurs |
 | Maquettes / wireframes | ✅ | `docs/07-wireframes.md` | ASCII wireframes pour toutes les pages | — |
 
@@ -92,7 +92,7 @@
 |----------|--------|-------------|--------|-------------|
 | Schéma d'architecture 3-tiers | ✅ | `docs/06-architecture.md` | Mermaid `graph TB` + Docker containers | Clair, complet |
 | Modèle logique de données (MLD) | ✅ | `docs/05-mcd-mld.md` | Tables + clés étrangères | ⚠️ Même incohérences que le MCD |
-| Script SQL de création | ⚠️ | `docs/script.sql` | Tables User, CoachProfile, Session, Booking | ❌ Script obsolète : ne contient pas la table `RefreshToken`, ni les champs de localisation décomposés (locationName, address, city…), ni `specialties` comme array, ni les migrations récentes |
+| Script SQL de création | ✅ | `docs/script.sql` | Tables User, CoachProfile, Session, Booking, RefreshToken | Réécrit pour refléter le schéma réel : `RefreshToken`, champs location décomposés, `specialties TEXT[]`, contraintes FK |
 | API REST obligatoire | ✅ | `backend/src/` + `src/openapi.yaml` (685 lignes) | Swagger UI sur `/api/docs` | Toutes les routes documentées |
 | Séparation des couches | ✅ | Architecture : Frontend → API → DB | 3 containers Docker indépendants | Middleware → Controller → Service → Prisma |
 
@@ -106,7 +106,7 @@
 |----------|--------|-------------|--------|-------------|
 | Authentification JWT | ✅ | `auth.service.ts` + `middlewares/auth.ts` | Access 15 min + refresh 7 j + rotation | Replay attack detection implémentée |
 | CRUD complet | ✅ | sessions (C/R/U/D), bookings (C/R/D), users (R/U/D), auth (register/login/refresh) | Tous les handlers présents | — |
-| Gestion des règles métier | ✅ | `bookings.service.ts` (transaction), `sessions.service.ts` (FORBIDDEN), `auth.service.ts` (overlap) | 47 tests passent | — |
+| Gestion des règles métier | ✅ | `bookings.service.ts` (transaction), `sessions.service.ts` (FORBIDDEN), `auth.service.ts` (overlap) | 62 tests passent | — |
 
 #### Frontend (minimum)
 
@@ -124,16 +124,16 @@
 
 | Exigence | Statut | Emplacement | Preuve | Commentaire |
 |----------|--------|-------------|--------|-------------|
-| Tests unitaires (minimum API) | ✅ | `backend/tests/` — 6 fichiers | 47/47 passent (`npm test`) | Unit (auth, sessions, bookings, jwt) + intégration (auth routes, bookings routes) |
+| Tests unitaires (minimum API) | ✅ | `backend/tests/` — 7 fichiers | 62/62 passent (`npm test`) | Unit (auth, sessions, bookings, users, jwt) + intégration (auth routes, bookings routes) |
 | Tests endpoints sensibles (401, 403, 409) | ✅ | `tests/integration/` | 401 sans token, 403 mauvais rôle, 409 collision | — |
-| Couverture ≥ 75 % services métier | ⚠️ | — | Non mesurée (`npm run test:coverage` non lancé en CI) | À vérifier ; services principaux couverts mais users.service non testé |
+| Couverture ≥ 75 % services métier | ✅ | `npm run test:coverage` | 79 % global (badge README) | `users.service` testé ; tous les services métier principaux couverts |
 
 #### Documentation
 
 | Exigence | Statut | Emplacement | Preuve | Commentaire |
 |----------|--------|-------------|--------|-------------|
 | README | ✅ | `README.md` (racine) | Stack, install Docker+local, env vars, comptes seed, endpoints, tests, liens docs | Complet |
-| Documentation API (Swagger) | ✅ | `backend/src/openapi.yaml` + `/api/docs` | 685 lignes, 13 paths documentés | ⚠️ Route `GET /api/sports` absente du Swagger |
+| Documentation API (Swagger) | ✅ | `backend/src/openapi.yaml` + `/api/docs` | 685 lignes, 14 paths documentés | `GET /api/sports`, `POST /api/auth/logout`, param `?q=` ajoutés |
 
 #### Déploiement
 
@@ -148,12 +148,12 @@
 | Livrable | Statut | Emplacement | Preuve | Commentaire |
 |----------|--------|-------------|--------|-------------|
 | Dépôt Git | ✅ | GitHub | Dépôt public | — |
-| Historique de commits cohérent | ❌ | `git log --oneline` | **3 commits** (feat: initial release, style: new style, fix: eslint) | Trop peu — le jury voit le processus de développement dans les commits. Objectif ≥ 15 avec messages conventionnels |
+| Historique de commits cohérent | ⚠️ | `git log --oneline` | **9 commits** avec messages conventionnels (`feat:`, `fix:`, `docs:`, `test:`, `chore:`) | Amélioré depuis 3 → 9 commits. Idéalement ≥ 15 pour montrer une démarche itérative au jury |
 | Code structuré | ✅ | `backend/src/modules/` + `frontend/src/` | Feature-based modules, séparation concerns | — |
 | README complet | ✅ | `README.md` | Description, install, exécution, choix techniques | — |
-| Tests | ✅ | `backend/tests/` | 47 tests verts | — |
+| Tests | ✅ | `backend/tests/` | 62 tests verts, 79 % coverage | — |
 | Dockerfile / procédure déploiement | ✅ | `backend/Dockerfile`, `frontend/Dockerfile`, `docker-compose.yml` | `docker compose up --build` fonctionnel | ⚠️ `.env.example` présent ? À vérifier |
-| Diagrammes (UML, MCD…) | ✅ | `docs/` (8 fichiers) | Cas d'usage, classes, MCD/MLD, archi, wireframes | ⚠️ Incohérences vs schéma réel (voir 1.3) |
+| Diagrammes (UML, MCD…) | ✅ | `docs/` (9 fichiers) | Cas d'usage, classes, MCD/MLD, archi, wireframes, audit | Synchronisés avec le schéma réel (RefreshToken, location, specialties) |
 
 ---
 
@@ -182,14 +182,14 @@
 | Gestion des accès | ✅ | `requireRole()` middleware, ownership checks dans les services |
 | Rate limiting | ✅ | `express-rate-limit` sur `/auth/register` et `/auth/login` (10 req/15 min) |
 | Pas de fuite mot de passe | ✅ | `sanitizeUser()` dans auth.service et users.service |
-| Logout serveur | ❌ | `logout()` frontend = localStorage clear uniquement — pas d'endpoint `POST /api/auth/logout` qui révoque le refresh token en BDD |
+| Logout serveur | ✅ | `POST /api/auth/logout` révoque le tokenHash en DB + frontend appelle l'endpoint avant le clear localStorage |
 
 #### Documentation
 
 | Critère | Statut | Preuve |
 |---------|--------|--------|
 | Clarté | ✅ | README structuré, docs Mermaid lisibles |
-| Complétude | ⚠️ | 8 docs présents mais incohérences (SQL obsolète, diagrammes décalés) |
+| Complétude | ✅ | 9 docs présents, script.sql + diagrammes mis à jour, SOUTENANCE.md ajouté |
 
 #### Soutenance
 
@@ -197,14 +197,14 @@
 |---------|--------|--------|
 | Capacité à expliquer les choix | ✅ | `docs/08-choix-techniques.md` détaille 16 décisions |
 | Justification technique | ✅ | Chaque choix a une section dédiée |
-| Fichier de préparation soutenance | ❌ | Pas de `SOUTENANCE.md` |
+| Fichier de préparation soutenance | ✅ | `SOUTENANCE.md` : pitch 30 s, chemin de démo, justifications techniques, limitations V2 |
 
 #### Bonus (non obligatoires)
 
 | Bonus | Statut | Preuve |
 |-------|--------|--------|
 | Pagination | ✅ | Toutes les listes (sessions, bookings, users) |
-| Recherche | ❌ | Pas de paramètre `q` ni barre de recherche |
+| Recherche | ✅ | Paramètre `?q=` backend (ILIKE titre/ville/lieu) + barre de recherche frontend debounced 300 ms |
 | Gestion avancée des rôles | ✅ | Trois rôles distincts, middleware granulaire, admin peut modifier les rôles |
 | CI/CD | ✅ | `ci.yml` (lint, test, build) + `cd.yml` (push images Docker sur GHCR) |
 
@@ -214,12 +214,13 @@
 
 ### Tests backend
 ```
-npm test → 47/47 ✅ (6 fichiers, unit + intégration)
+npm test → 62/62 ✅ (7 fichiers, unit + intégration)
+npm run test:coverage → 79 % global ✅
 ```
 
 ### Build frontend
 ```
-npm run build → ✅ (vite build réussi, warnings chunk size non bloquants)
+npm run build → ✅ (vite build réussi, code-splitting par route via React.lazy, warnings chunk size non bloquants)
 ```
 
 ### Lint
@@ -245,11 +246,12 @@ frontend: 0 erreurs, 0 warnings ✅
 | Coach voit participants | ✅ | Modal participants dans CoachPlanning |
 | Coach ne peut pas modifier la séance d'un autre | ✅ | Test unit FORBIDDEN |
 | Login admin → CRUD utilisateurs | ✅ | AdminUsers.tsx — tableau paginé |
-| Admin voit toutes les séances | ✅ | GET /api/sessions accessible à tous les rôles authentifiés |
+| Admin voit toutes les séances + KPIs | ✅ | GET /api/sessions + bandeaux KPI (clients/coachs/admins) sur AdminUsers |
 | 401 sans JWT | ✅ | Testé intégration |
 | 403 élévation de privilèges (client → POST /sessions) | ✅ | requireRole('COACH','ADMIN') |
 | Swagger /api/docs | ✅ | openapi.yaml chargé dynamiquement |
-| Logout serveur | ❌ | Logout = clear localStorage uniquement, refresh token toujours valide en DB |
+| Logout serveur | ✅ | POST /api/auth/logout révoque tokenHash en DB ; frontend appelle l'endpoint avant clear localStorage |
+| Recherche séances | ✅ | Barre debounced 300 ms → ?q= ILIKE titre/ville/lieu |
 
 ---
 
@@ -257,41 +259,34 @@ frontend: 0 erreurs, 0 warnings ✅
 
 ### Score de conformité global
 
-**35 / 40 exigences validées (87.5 %)**
+**38 / 40 exigences validées (95 %)**
 
 | Catégorie | ✅ | ⚠️ | ❌ |
 |-----------|----|----|-----|
 | Fonctionnalités (15) | 14 | 1 | 0 |
 | Données métier (5) | 4 | 1 | 0 |
-| Livrables conception (8) | 5 | 3 | 0 |
-| Sécurité (5) | 4 | 0 | 1 |
-| Soutenance (3) | 2 | 0 | 1 |
-| Bonus (4) | 3 | 0 | 1 |
+| Livrables conception (8) | 8 | 0 | 0 |
+| Sécurité (5) | 5 | 0 | 0 |
+| Soutenance (3) | 3 | 0 | 0 |
+| Bonus (4) | 4 | 0 | 0 |
 
 ---
 
-### Manques bloquants (❌) — perte certaine de points
+### Points résiduels (⚠️)
 
-1. **Historique git insuffisant** : 3 commits seulement. Le jury évalue la démarche via l'historique. Objectif minimum : 15 commits atomiques avec messages conventionnels.
-2. **Logout serveur absent** : `POST /api/auth/logout` manquant. Le refresh token reste valide en BDD après déconnexion. Faille de sécurité notable.
-3. **Recherche manquante** : Bonus explicitement listé dans le sujet, absent. Une barre de recherche simple sur le titre des séances est rapide à implémenter.
-4. **SOUTENANCE.md absent** : Pas de fiche de préparation à la soutenance orale.
+1. **Historique git** : 9 commits avec messages conventionnels. Idéalement ≥ 15 pour mieux illustrer la démarche itérative au jury. À enrichir avant la soutenance.
+2. **Supervision admin** : `AdminUsers.tsx` affiche désormais des KPIs (clients / coachs / admins) mais le rôle reste modélisé comme enum (pas de table séparée). Justifier ce choix en soutenance.
 
-### Points partiels à renforcer (⚠️)
+### Toutes les corrections appliquées ✅
 
-1. **Script SQL obsolète** (`docs/script.sql`) : ne reflète plus le schéma actuel (pas de `RefreshToken`, pas des champs location décomposés, pas de `specialties[]`).
-2. **Diagramme de classes** (`docs/04-class-diagram.md`) : `CoachProfile.specialty` en string vs tableau en réalité ; `RefreshToken` absent.
-3. **MCD/MLD** (`docs/05-mcd-mld.md`) : `RefreshToken` et champs location manquants.
-4. **Supervision admin** : pas de page dédiée ni de KPIs admin.
-5. **Coverage non reportée** en CI : `npm run test:coverage` disponible mais non lancé automatiquement.
-6. **Route `GET /api/sports` absente du Swagger**.
-
-### Recommandations (ordre priorité)
-
-1. ✅ Mettre à jour `docs/script.sql` → refléter le schéma actuel
-2. ✅ Mettre à jour diagrammes (classe + MCD) → ajouter RefreshToken, corriger specialties
-3. ✅ Ajouter `POST /api/auth/logout` (révocation refresh token en DB)
-4. ✅ Ajouter recherche (`q` query param sur `/api/sessions` + barre de recherche frontend)
-5. ✅ Créer `SOUTENANCE.md`
-6. ✅ Ajouter `/api/sports` au Swagger
-7. ✅ Commits atomiques sur chaque correction (enrichit l'historique git)
+| Correction | Commit |
+|-----------|--------|
+| `docs/script.sql` réécrit (RefreshToken, location, specialties) | `docs(schema): update script.sql…` |
+| Diagramme de classes mis à jour | `docs(diagrams): sync class diagram…` |
+| MCD/MLD mis à jour | idem |
+| `POST /api/auth/logout` — révocation refresh token en DB | `feat(auth): implement server-side logout…` |
+| Recherche `?q=` ILIKE + barre frontend debounced | `feat(sessions): add full-text search…` |
+| `SOUTENANCE.md` créé | `docs(soutenance): add presentation guide…` |
+| Swagger `/api/sports`, `/auth/logout`, `?q=` ajoutés | `docs(openapi): add sports, logout, search…` |
+| Tests : 47 → 62, coverage 79 % | `test(users): add users.service unit tests…` |
+| Commits atomiques enrichis | 9 commits conventionnels |
