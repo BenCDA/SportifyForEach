@@ -21,10 +21,16 @@ const mockSession = {
   coachId: 'coach-1',
   title: 'Yoga',
   description: null,
+  requirements: null,
   startAt: new Date(),
   durationMin: 60,
   capacity: 10,
-  location: 'Salle A',
+  locationName: 'Studio Zen',
+  address: '12 rue de Béthune',
+  city: 'Lille',
+  postalCode: '59000',
+  latitude: null,
+  longitude: null,
   createdAt: new Date(),
 };
 

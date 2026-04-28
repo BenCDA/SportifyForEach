@@ -3,49 +3,154 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-[#0B0F19] text-gray-100 antialiased;
+  html {
+    scroll-behavior: smooth;
+    font-variant-numeric: tabular-nums;
   }
-  * {
-    @apply border-gray-800;
+
+  body {
+    @apply bg-paper text-ink antialiased font-sans;
+  }
+
+  ::selection {
+    background: #1a1a1a;
+    color: #f5f3ee;
+  }
+
+  *:focus-visible {
+    outline: 2px solid #1a1a1a;
+    outline-offset: 4px;
   }
 }
 
 @layer components {
+  /* ── Buttons ──────────────────────────────────────────── */
   .btn-primary {
-    @apply bg-accent hover:bg-accent-hover text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-accent/50;
+    @apply inline-flex items-center justify-center gap-2
+      bg-ink text-paper font-sans font-medium text-xs tracking-widest uppercase
+      px-6 h-12 rounded-none
+      transition-all duration-200
+      disabled:opacity-40 disabled:cursor-not-allowed
+      focus:outline-none;
   }
+  .btn-primary:not(:disabled):hover {
+    @apply bg-ink/85;
+  }
+
   .btn-secondary {
-    @apply bg-gray-800 hover:bg-gray-700 text-gray-200 font-medium py-2 px-4 rounded-lg border border-gray-700 hover:border-gray-600 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none;
+    @apply inline-flex items-center justify-center gap-2
+      bg-transparent text-ink font-sans font-medium text-xs tracking-widest uppercase
+      px-6 h-12 rounded-none
+      border border-ink/20
+      transition-all duration-200
+      disabled:opacity-40 disabled:cursor-not-allowed
+      focus:outline-none;
   }
+  .btn-secondary:not(:disabled):hover {
+    @apply border-ink/60;
+  }
+
   .btn-danger {
-    @apply bg-red-600 hover:bg-red-500 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-red-500/50;
+    @apply inline-flex items-center justify-center gap-2
+      bg-accent text-white font-sans font-medium text-xs tracking-widest uppercase
+      px-6 h-12 rounded-none
+      transition-opacity duration-200
+      disabled:opacity-40 disabled:cursor-not-allowed
+      focus:outline-none;
   }
+  .btn-danger:not(:disabled):hover {
+    @apply opacity-85;
+  }
+
   .btn-ghost {
-    @apply text-gray-400 hover:text-gray-100 hover:bg-gray-800 font-medium py-2 px-3 rounded-lg transition-all duration-200 focus:outline-none;
+    @apply inline-flex items-center justify-center
+      text-muted hover:text-ink
+      transition-colors duration-150
+      focus:outline-none;
   }
+
+  /* ── Inputs (underline style) ─────────────────────────── */
   .input-field {
-    @apply w-full bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-500 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent/50 transition-colors duration-200;
+    @apply w-full bg-transparent
+      border-0 border-b-2 border-ink/15
+      text-ink placeholder-faint
+      py-2.5 px-0
+      focus:outline-none focus:border-ink
+      transition-colors duration-200
+      font-sans text-sm;
   }
+
+  .input-label {
+    @apply block font-mono text-[11px] uppercase tracking-[0.1em] text-muted mb-2;
+  }
+
+  /* select inherits input-field but needs appearance reset */
+  select.input-field {
+    @apply appearance-none cursor-pointer;
+  }
+
+  /* ── Cards ────────────────────────────────────────────── */
   .card {
-    @apply bg-gray-900 rounded-xl border border-gray-800 p-6;
+    @apply bg-surface border border-ink/10 p-6;
   }
-  .card-hover {
-    @apply bg-gray-900 rounded-xl border border-gray-800 p-6 hover:border-accent/30 hover:shadow-lg hover:shadow-accent/5 transition-all duration-200;
-  }
+
+  /* ── Badges ───────────────────────────────────────────── */
   .badge {
-    @apply text-xs font-semibold px-2.5 py-0.5 rounded-full;
+    @apply font-mono text-[10px] uppercase tracking-[0.1em] px-2 py-0.5 inline-block;
   }
+
   .badge-client {
-    @apply badge bg-emerald-500/15 text-emerald-400 border border-emerald-500/20;
+    @apply badge bg-emerald-50 text-emerald-700 border border-emerald-200;
   }
+
   .badge-coach {
-    @apply badge bg-blue-500/15 text-blue-400 border border-blue-500/20;
+    @apply badge bg-sky-50 text-sky-700 border border-sky-200;
   }
+
   .badge-admin {
-    @apply badge bg-purple-500/15 text-purple-400 border border-purple-500/20;
+    @apply badge bg-ink/5 text-ink border border-ink/15;
   }
-  .skeleton {
-    @apply animate-pulse bg-gray-800 rounded;
+
+  /* ── Session title hover underline ───────────────────── */
+  .session-title-hover {
+    position: relative;
+    display: inline;
+  }
+  .session-title-hover::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: #e63946;
+    transition: width 200ms ease-out;
+  }
+  .group:hover .session-title-hover::after {
+    width: 100%;
+  }
+
+  /* ── Shimmer loading lines ────────────────────────────── */
+  .shimmer-line {
+    @apply relative overflow-hidden rounded-none;
+    background-color: rgb(26 26 26 / 0.08);
+  }
+  .shimmer-line::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.6) 50%,
+      transparent 100%
+    );
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+}
+
+@layer utilities {
+  .font-tabular {
+    font-variant-numeric: tabular-nums;
   }
 }

@@ -4,27 +4,32 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: {
-          base: '#0B0F19',
-          surface: '#111827',
-          elevated: '#1A2235',
-        },
-        accent: {
-          DEFAULT: '#F97316',
-          hover: '#EA6C0A',
-        },
+        paper: '#F5F3EE',
+        surface: '#FFFFFF',
+        'surface-alt': '#EDEAE3',
+        ink: '#1A1A1A',
+        muted: '#6B6760',
+        faint: '#9E9B98',
+        accent: '#E63946',
       },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-      },
-      animation: {
-        'fade-in': 'fadeIn 0.2s ease-out',
+        serif: ['"Instrument Serif"', 'Georgia', 'serif'],
+        sans: ['"Inter Tight"', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
       keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0', transform: 'translateY(4px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
+        drawLine: {
+          '0%': { width: '0%' },
+          '100%': { width: '100%' },
         },
+        shimmer: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+      },
+      animation: {
+        draw: 'drawLine 0.55s ease-out forwards',
+        shimmer: 'shimmer 1.6s ease-in-out infinite',
       },
     },
   },

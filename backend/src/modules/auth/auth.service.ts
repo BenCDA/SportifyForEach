@@ -49,7 +49,7 @@ export async function register(input: RegisterInput) {
       await tx.coachProfile.create({
         data: {
           userId: created.id,
-          specialty: input.specialty ?? '',
+          specialties: input.specialties ?? [],
           bio: input.bio ?? '',
         },
       });

@@ -23,7 +23,7 @@ export interface RegisterPayload {
   firstName: string;
   lastName: string;
   role?: 'CLIENT' | 'COACH';
-  specialty?: string;
+  specialties?: string[];
   bio?: string;
 }
 

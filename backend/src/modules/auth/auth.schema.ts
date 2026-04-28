@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SPORTS } from '../../constants/sports';
 
 const passwordSchema = z
   .string()
@@ -9,17 +10,17 @@ const passwordSchema = z
 export const registerSchema = z.object({
   body: z
     .object({
-      email:     z.string().email('Email invalide'),
-      password:  passwordSchema,
-      firstName: z.string().min(1, 'Prénom requis'),
-      lastName:  z.string().min(1, 'Nom requis'),
-      role:      z.enum(['CLIENT', 'COACH']).default('CLIENT'),
-      specialty: z.string().min(1, 'Spécialité requise pour les coachs').optional(),
-      bio:       z.string().optional(),
+      email:      z.string().email('Email invalide'),
+      password:   passwordSchema,
+      firstName:  z.string().min(1, 'Prénom requis'),
+      lastName:   z.string().min(1, 'Nom requis'),
+      role:       z.enum(['CLIENT', 'COACH']).default('CLIENT'),
+      specialties: z.array(z.enum(SPORTS)).min(1).max(3).optional(),
+      bio:        z.string().optional(),
     })
     .refine(
-      (data) => data.role !== 'COACH' || (data.specialty && data.specialty.length > 0),
-      { message: 'La spécialité est requise pour un compte coach', path: ['specialty'] },
+      (d) => d.role !== 'COACH' || (d.specialties && d.specialties.length > 0),
+      { message: 'Au moins une spécialité requise pour un compte coach', path: ['specialties'] },
     ),
 });
 

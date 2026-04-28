@@ -1,20 +1,23 @@
 import { Link } from 'react-router-dom';
-import { Dumbbell, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 export function NotFound() {
   return (
-    <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center p-6">
-      <div className="text-center max-w-sm">
-        <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-          <Dumbbell className="w-8 h-8 text-accent" />
-        </div>
-        <h1 className="text-6xl font-extrabold text-gray-700 mb-3">404</h1>
-        <h2 className="text-xl font-semibold text-gray-300 mb-2">Page introuvable</h2>
-        <p className="text-gray-500 text-sm mb-8">
-          La page que vous cherchez n&apos;existe pas ou a été déplacée.
+    <div className="min-h-screen bg-paper flex items-center justify-center p-8">
+      <div className="text-center">
+        <p className="font-serif italic text-[clamp(96px,16vw,160px)] text-ink/[0.06] leading-none select-none mb-2">
+          404
         </p>
-        <Link to="/" className="inline-flex items-center gap-2 btn-primary">
-          <ArrowLeft className="w-4 h-4" />Retour à l&apos;accueil
+        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted mb-2">
+          Page introuvable
+        </p>
+        <div className="w-8 h-px bg-ink/20 mx-auto mb-8" />
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.15em] text-ink hover:text-muted transition-colors duration-150"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" strokeWidth={1.5} />
+          Retour
         </Link>
       </div>
     </div>

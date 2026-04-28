@@ -28,27 +28,34 @@ model User {
 }
 
 model CoachProfile {
-  id        String  @id @default(uuid())
-  userId    String  @unique
-  bio       String?
-  specialty String?
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  bio         String?
+  specialties String[]
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Session {
-  id          String    @id @default(uuid())
-  coachId     String
-  title       String
-  description String?
-  startAt     DateTime
-  durationMin Int
-  capacity    Int
-  location    String
-  createdAt   DateTime  @default(now())
-  coach       User      @relation("CoachSessions", fields: [coachId], references: [id], onDelete: Cascade)
-  bookings    Booking[]
+  id           String    @id @default(uuid())
+  coachId      String
+  title        String
+  description  String?
+  requirements String?
+  startAt      DateTime
+  durationMin  Int
+  capacity     Int
+  locationName String
+  address      String
+  city         String
+  postalCode   String
+  latitude     Float?
+  longitude    Float?
+  createdAt    DateTime  @default(now())
+  coach        User      @relation("CoachSessions", fields: [coachId], references: [id], onDelete: Cascade)
+  bookings     Booking[]
 
   @@index([startAt])
+  @@index([city])
 }
 
 model Booking {

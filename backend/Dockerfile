@@ -22,18 +22,19 @@ RUN apk add --no-cache openssl
 
 ENV NODE_ENV=production
 
-# Copie tout depuis le builder : node_modules inclut prisma CLI + engines déjà générés
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/dist-seed ./dist-seed
+# Create user before COPY so --chown resolves correctly
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-COPY prisma ./prisma/
-COPY src/openapi.yaml ./dist/openapi.yaml
-COPY entrypoint.sh ./entrypoint.sh
+# Use --chown at copy time to avoid chown -R on a frozen overlay layer
+COPY --from=builder --chown=appuser:appgroup /app/node_modules ./node_modules
+COPY --from=builder --chown=appuser:appgroup /app/dist ./dist
+COPY --from=builder --chown=appuser:appgroup /app/dist-seed ./dist-seed
 
-RUN chmod +x entrypoint.sh && \
-    addgroup -S appgroup && adduser -S appuser -G appgroup && \
-    chown -R appuser:appgroup /app
+COPY --chown=appuser:appgroup prisma ./prisma/
+COPY --chown=appuser:appgroup src/openapi.yaml ./dist/openapi.yaml
+COPY --chown=appuser:appgroup entrypoint.sh ./entrypoint.sh
+
+RUN chmod +x entrypoint.sh
 
 USER appuser
 

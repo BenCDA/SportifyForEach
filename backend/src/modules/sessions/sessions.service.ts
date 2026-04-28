@@ -1,13 +1,41 @@
 import { prisma } from '../../config/prisma';
 import { AppError } from '../../utils/AppError';
 
-export interface CreateSessionInput {
-  title: string;
+export interface LocationInput {
+  locationName: string;
+  address:      string;
+  city:         string;
+  postalCode:   string;
+  latitude?:    number;
+  longitude?:   number;
+}
+
+export interface CreateSessionInput extends LocationInput {
+  title:        string;
   description?: string;
-  startAt: string;
-  durationMin: number;
-  capacity: number;
-  location: string;
+  requirements?: string;
+  startAt:      string;
+  durationMin:  number;
+  capacity:     number;
+}
+
+function formatSession(s: {
+  id: string; coachId: string; title: string; description: string | null;
+  requirements: string | null;
+  startAt: Date; durationMin: number; capacity: number;
+  locationName: string; address: string; city: string; postalCode: string;
+  latitude: number | null; longitude: number | null;
+  createdAt: Date;
+  coach: { id: string; firstName: string; lastName: string; email: string };
+  _count: { bookings: number };
+}) {
+  return {
+    id: s.id, title: s.title, description: s.description, requirements: s.requirements,
+    startAt: s.startAt, durationMin: s.durationMin, capacity: s.capacity,
+    locationName: s.locationName, address: s.address, city: s.city,
+    postalCode: s.postalCode, latitude: s.latitude, longitude: s.longitude,
+    createdAt: s.createdAt, coach: s.coach, bookingsCount: s._count.bookings,
+  };
 }
 
 export async function listSessions(
@@ -19,7 +47,7 @@ export async function listSessions(
   if (filters.from || filters.to) {
     where['startAt'] = {
       ...(filters.from ? { gte: new Date(filters.from) } : {}),
-      ...(filters.to ? { lte: new Date(filters.to) } : {}),
+      ...(filters.to   ? { lte: new Date(filters.to)   } : {}),
     };
   }
   if (filters.coachId) where['coachId'] = filters.coachId;
@@ -38,21 +66,7 @@ export async function listSessions(
     prisma.session.count({ where }),
   ]);
 
-  return {
-    sessions: sessions.map((s) => ({
-      id: s.id,
-      title: s.title,
-      description: s.description,
-      startAt: s.startAt,
-      durationMin: s.durationMin,
-      capacity: s.capacity,
-      location: s.location,
-      createdAt: s.createdAt,
-      coach: s.coach,
-      bookingsCount: s._count.bookings,
-    })),
-    meta: { page, limit, total },
-  };
+  return { sessions: sessions.map(formatSession), meta: { page, limit, total } };
 }
 
 export async function getSessionById(id: string, requesterId: string, requesterRole: string) {
@@ -70,20 +84,10 @@ export async function getSessionById(id: string, requesterId: string, requesterR
   });
   if (!session) throw new AppError(404, 'SESSION_NOT_FOUND', 'Session not found');
 
-  const canSeeParticipants =
-    requesterRole === 'ADMIN' || session.coachId === requesterId;
+  const canSeeParticipants = requesterRole === 'ADMIN' || session.coachId === requesterId;
 
   return {
-    id: session.id,
-    title: session.title,
-    description: session.description,
-    startAt: session.startAt,
-    durationMin: session.durationMin,
-    capacity: session.capacity,
-    location: session.location,
-    createdAt: session.createdAt,
-    coach: session.coach,
-    bookingsCount: session._count.bookings,
+    ...formatSession(session),
     participants: canSeeParticipants ? session.bookings.map((b) => b.client) : undefined,
   };
 }
@@ -92,12 +96,18 @@ export async function createSession(coachId: string, input: CreateSessionInput) 
   return prisma.session.create({
     data: {
       coachId,
-      title: input.title,
-      description: input.description,
-      startAt: new Date(input.startAt),
-      durationMin: input.durationMin,
-      capacity: input.capacity,
-      location: input.location,
+      title:        input.title,
+      description:  input.description,
+      requirements: input.requirements,
+      startAt:      new Date(input.startAt),
+      durationMin:  input.durationMin,
+      capacity:     input.capacity,
+      locationName: input.locationName,
+      address:      input.address,
+      city:         input.city,
+      postalCode:   input.postalCode,
+      latitude:     input.latitude,
+      longitude:    input.longitude,
     },
   });
 }

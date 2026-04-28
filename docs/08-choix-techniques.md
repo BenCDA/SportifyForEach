@@ -62,6 +62,11 @@
 **Décision :** `CORS_ORIGIN` en variable d'environnement (défaut `http://localhost:5173`).
 **Raison :** Permet de configurer l'origine autorisée sans modifier le code en production.
 
+### 16. Direction artistique frontend — Option A « Off-white éditorial »
+**Décision :** Palette off-white (`#F5F3EE` paper, `#FFFFFF` surface, `#1A1A1A` ink, `#E63946` accent), typographie tripartite Instrument Serif (titres italiques) / Inter Tight (corps UI) / JetBrains Mono (métadonnées, labels, chiffres tabulaires).
+**Références :** Linear, Vercel, Stripe, Whoop — minimalisme éditorial, magazine sportif haut de gamme.
+**Raison :** Aucun gradient, aucun glassmorphisme, `rounded-none` sur tous les boutons, inputs underline-only. Cohérence immédiate sur portfolio de studio : la hiérarchie typographique remplace l'ornement visuel. Le rouge `#E63946` accent est utilisé uniquement pour les erreurs, la disponibilité complète et les badges ADMIN — jamais comme décoration.
+
 ## Ambiguïtés résolues
 
 | Ambiguïté | Décision prise |

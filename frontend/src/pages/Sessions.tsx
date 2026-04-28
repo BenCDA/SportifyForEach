@@ -1,13 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { SlidersHorizontal, X, Calendar } from 'lucide-react';
+import { LayoutGrid, List, SlidersHorizontal, X, ArrowRight } from 'lucide-react';
 import { sessionsApi, Session } from '../api/sessions';
-import { bookingsApi } from '../api/bookings';
 import { useAuth } from '../context/AuthContext';
 import { SessionCard } from '../components/SessionCard';
-import { SessionCardSkeleton } from '../components/Skeleton';
+import { SessionRowSkeleton } from '../components/Skeleton';
+import { BookingModal } from '../components/BookingModal';
 import { Pagination } from '../components/Pagination';
-import axios from 'axios';
+import { formatSessionDate, cn } from '../lib/utils';
+
+const SKELETON_KEYS = ['sk-1', 'sk-2', 'sk-3', 'sk-4', 'sk-5', 'sk-6'];
+
+type ViewMode = 'list' | 'grid';
 
 export function Sessions() {
   const { user } = useAuth();
@@ -15,8 +19,11 @@ export function Sessions() {
   const [meta, setMeta] = useState({ page: 1, limit: 10, total: 0 });
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [bookingId, setBookingId] = useState<string | null>(null);
   const [filters, setFilters] = useState({ from: '', to: '' });
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const [bookingModalOpen, setBookingModalOpen] = useState(false);
 
   const fetchSessions = useCallback(async () => {
     setLoading(true);
@@ -34,123 +41,249 @@ export function Sessions() {
     }
   }, [page, filters]);
 
-  useEffect(() => {
-    void fetchSessions();
-  }, [fetchSessions]);
+  useEffect(() => { void fetchSessions(); }, [fetchSessions]);
 
-  const handleBook = async (sessionId: string) => {
-    setBookingId(sessionId);
-    try {
-      await bookingsApi.create(sessionId);
-      toast.success('Réservation effectuée !');
-      void fetchSessions();
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        toast.error(err.response?.data?.error?.message as string ?? 'Erreur lors de la réservation');
-      }
-    } finally {
-      setBookingId(null);
-    }
+  const openBooking = (sessionId: string) => {
+    const session = sessions.find((s) => s.id === sessionId);
+    if (session) { setSelectedSession(session); setBookingModalOpen(true); }
   };
 
-  const resetFilters = () => {
-    setFilters({ from: '', to: '' });
-    setPage(1);
-  };
-
+  const resetFilters = () => { setFilters({ from: '', to: '' }); setPage(1); };
   const hasFilters = filters.from || filters.to;
+  const plural = meta.total === 1 ? '' : 's';
 
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-end justify-between mb-8 pb-6 border-b border-ink/8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-100">Séances disponibles</h1>
+          <h1 className="font-serif italic text-[clamp(32px,4vw,48px)] text-ink leading-tight tracking-tight">
+            Séances
+          </h1>
           {!loading && (
-            <p className="text-sm text-gray-500 mt-0.5">{meta.total} séance{meta.total !== 1 ? 's' : ''} trouvée{meta.total !== 1 ? 's' : ''}</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted mt-1">
+              {meta.total} séance{plural} disponible{plural}
+            </p>
           )}
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Filter toggle */}
+          <button
+            onClick={() => setFiltersOpen((o) => !o)}
+            className={cn(
+              'flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.1em] h-9 px-3 border transition-colors duration-150',
+              filtersOpen || hasFilters
+                ? 'border-ink text-ink bg-ink/5'
+                : 'border-ink/15 text-muted hover:border-ink/40 hover:text-ink',
+            )}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" strokeWidth={1.5} />
+            Filtres
+            {hasFilters && (
+              <span className="w-1.5 h-1.5 bg-accent rounded-full" />
+            )}
+          </button>
+
+          {/* View toggle */}
+          <div className="flex border border-ink/15">
+            <button
+              onClick={() => setViewMode('list')}
+              className={cn('w-9 h-9 flex items-center justify-center transition-colors duration-150', viewMode === 'list' ? 'bg-ink text-paper' : 'text-muted hover:text-ink')}
+              aria-label="Vue liste"
+            >
+              <List className="w-4 h-4" strokeWidth={1.5} />
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={cn('w-9 h-9 flex items-center justify-center transition-colors duration-150 border-l border-ink/15', viewMode === 'grid' ? 'bg-ink text-paper' : 'text-muted hover:text-ink')}
+              aria-label="Vue grille"
+            >
+              <LayoutGrid className="w-4 h-4" strokeWidth={1.5} />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Sticky filter bar */}
-      <div className="sticky top-16 z-40 bg-[#0B0F19]/95 backdrop-blur-sm pb-4 mb-6 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <SlidersHorizontal className="w-4 h-4 text-gray-400" />
-            <span className="text-sm font-medium text-gray-300">Filtres</span>
+      {/* Filters drawer */}
+      {filtersOpen && (
+        <div className="mb-6 p-5 border border-ink/10 bg-surface-alt">
+          <div className="flex items-center justify-between mb-4">
+            <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted">Filtrer par date</p>
             {hasFilters && (
-              <button
-                onClick={resetFilters}
-                className="ml-auto flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors"
-              >
-                <X className="w-3 h-3" />Réinitialiser
+              <button onClick={resetFilters} className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.08em] text-accent hover:opacity-70 transition-opacity">
+                <X className="w-3 h-3" strokeWidth={1.5} />Effacer
               </button>
             )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label htmlFor="filter-from" className="block text-xs text-gray-500 mb-1.5 flex items-center gap-1">
-                <Calendar className="w-3 h-3" />À partir du
-              </label>
-              <input
-                id="filter-from"
-                type="datetime-local"
-                className="input-field text-sm"
-                value={filters.from}
-                onChange={(e) => { setFilters(f => ({ ...f, from: e.target.value })); setPage(1); }}
-              />
+              <label htmlFor="filter-from" className="input-label">À partir du</label>
+              <input id="filter-from" type="datetime-local" className="input-field text-sm"
+                value={filters.from} onChange={(e) => { setFilters((f) => ({ ...f, from: e.target.value })); setPage(1); }} />
             </div>
             <div>
-              <label htmlFor="filter-to" className="block text-xs text-gray-500 mb-1.5 flex items-center gap-1">
-                <Calendar className="w-3 h-3" />Jusqu&apos;au
-              </label>
-              <input
-                id="filter-to"
-                type="datetime-local"
-                className="input-field text-sm"
-                value={filters.to}
-                onChange={(e) => { setFilters(f => ({ ...f, to: e.target.value })); setPage(1); }}
-              />
+              <label htmlFor="filter-to" className="input-label">Jusqu&apos;au</label>
+              <input id="filter-to" type="datetime-local" className="input-field text-sm"
+                value={filters.to} onChange={(e) => { setFilters((f) => ({ ...f, to: e.target.value })); setPage(1); }} />
             </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Grid */}
-      {loading ? (
+      {/* Content */}
+      {renderContent({ loading, sessions, viewMode, user, openBooking, hasFilters, resetFilters })}
+
+      <Pagination page={page} total={meta.total} limit={meta.limit} onPageChange={setPage} />
+
+      <BookingModal
+        session={selectedSession}
+        open={bookingModalOpen}
+        onClose={() => setBookingModalOpen(false)}
+        onBooked={() => { void fetchSessions(); }}
+      />
+    </div>
+  );
+}
+
+interface ContentProps {
+  loading: boolean;
+  sessions: Session[];
+  viewMode: ViewMode;
+  user: { role: string } | null;
+  openBooking: (id: string) => void;
+  hasFilters: string;
+  resetFilters: () => void;
+}
+
+function renderContent({ loading, sessions, viewMode, user, openBooking, hasFilters, resetFilters }: ContentProps) {
+  if (loading) {
+    if (viewMode === 'grid') {
+      return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => <SessionCardSkeleton key={i} />)}
+          {SKELETON_KEYS.map((k) => (
+            <div key={k} className="bg-surface border border-ink/10 p-5 space-y-3">
+              <div className="shimmer-line h-5 w-3/4" />
+              <div className="shimmer-line h-3 w-1/2" />
+              <div className="shimmer-line h-9 w-full mt-3" />
+            </div>
+          ))}
         </div>
-      ) : sessions.length === 0 ? (
-        <div className="text-center py-20">
-          <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Calendar className="w-7 h-7 text-gray-600" />
-          </div>
-          <h3 className="text-gray-300 font-medium mb-1">Aucune séance trouvée</h3>
-          <p className="text-gray-600 text-sm">
-            {hasFilters ? 'Essayez d\'ajuster vos filtres.' : 'Aucune séance n\'est disponible pour le moment.'}
+      );
+    }
+    return (
+      <div>
+        <SessionListHeader />
+        {SKELETON_KEYS.map((k) => <SessionRowSkeleton key={k} />)}
+      </div>
+    );
+  }
+
+  if (sessions.length === 0) {
+    return (
+      <div className="py-24 text-center">
+        <p className="font-serif italic text-3xl text-ink/30 mb-3">Rien ici. Pour l&apos;instant.</p>
+        {hasFilters && (
+          <button onClick={resetFilters} className="btn-secondary mt-4 text-xs">
+            Effacer les filtres
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  if (viewMode === 'grid') {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {sessions.map((session) => (
+          <SessionCard
+            key={session.id}
+            session={session}
+            onBook={user?.role === 'CLIENT' ? openBooking : undefined}
+          />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <SessionListHeader />
+      {sessions.map((session) => (
+        <SessionListRow
+          key={session.id}
+          session={session}
+          canBook={user?.role === 'CLIENT'}
+          onBook={openBooking}
+        />
+      ))}
+    </div>
+  );
+}
+
+function SessionListHeader() {
+  return (
+    <div className="hidden md:grid grid-cols-[1fr_180px_200px_64px_100px] gap-4 px-4 py-2 border-b border-ink/10">
+      <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-faint">Titre</span>
+      <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-faint">Encadrant</span>
+      <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-faint">Date</span>
+      <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-faint">Places</span>
+      <span />
+    </div>
+  );
+}
+
+interface RowProps { session: Session; canBook?: boolean; onBook: (id: string) => void }
+
+function SessionListRow({ session, canBook, onBook }: Readonly<RowProps>) {
+  const isFull = session.bookingsCount >= session.capacity;
+  return (
+    <div className="group relative border-b border-ink/8 hover:bg-ink/[0.02] transition-colors duration-100">
+      {/* Accent bar */}
+      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-accent scale-y-0 group-hover:scale-y-100 transition-transform duration-150 origin-center" />
+
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_180px_200px_64px_100px] gap-2 md:gap-4 px-4 py-4 items-center">
+        {/* Title */}
+        <div>
+          <p className="font-sans font-medium text-sm text-ink session-title-hover leading-snug">
+            {session.title}
           </p>
-          {hasFilters && (
-            <button onClick={resetFilters} className="btn-secondary text-sm mt-4">
-              Effacer les filtres
-            </button>
+          {session.locationName && (
+            <p className="font-mono text-[10px] uppercase tracking-[0.07em] text-faint mt-0.5 md:hidden">
+              {session.locationName} · {session.city}
+            </p>
           )}
         </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sessions.map((session) => (
-              <SessionCard
-                key={session.id}
-                session={session}
-                onBook={user?.role === 'CLIENT' ? handleBook : undefined}
-                booking={bookingId === session.id}
-              />
-            ))}
-          </div>
-          <Pagination page={page} total={meta.total} limit={meta.limit} onPageChange={setPage} />
-        </>
-      )}
+        {/* Coach */}
+        <p className="hidden md:block font-sans text-sm text-muted">
+          {session.coach.firstName} {session.coach.lastName}
+        </p>
+        {/* Date */}
+        <p className="font-mono text-[11px] uppercase tracking-[0.07em] text-muted hidden md:block">
+          {formatSessionDate(session.startAt)}
+        </p>
+        {/* Spots */}
+        <p className={cn('font-mono text-[11px] tabular-nums hidden md:block', isFull ? 'text-accent' : 'text-muted')}>
+          {String(session.bookingsCount).padStart(2, '0')}/{String(session.capacity).padStart(2, '0')}
+        </p>
+        {/* Action */}
+        {canBook ? (
+          <button
+            onClick={() => onBook(session.id)}
+            disabled={isFull}
+            className={cn(
+              'justify-self-end font-mono text-[10px] uppercase tracking-[0.1em] flex items-center gap-1 transition-colors duration-150',
+              isFull ? 'text-faint cursor-not-allowed' : 'text-ink hover:text-accent',
+            )}
+          >
+            {isFull ? 'Complet' : <>Réserver <ArrowRight className="w-3 h-3" strokeWidth={1.5} /></>}
+          </button>
+        ) : (
+          <span className="font-mono text-[10px] uppercase tracking-[0.07em] text-faint justify-self-end hidden md:block">
+            {formatSessionDate(session.startAt)}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

@@ -4,10 +4,16 @@ export interface Session {
   id: string;
   title: string;
   description?: string;
+  requirements?: string;
   startAt: string;
   durationMin: number;
   capacity: number;
-  location: string;
+  locationName: string;
+  address: string;
+  city: string;
+  postalCode: string;
+  latitude?: number;
+  longitude?: number;
   createdAt: string;
   coach: { id: string; firstName: string; lastName: string; email: string };
   bookingsCount: number;
@@ -30,10 +36,16 @@ export interface SessionFilters {
 export interface CreateSessionInput {
   title: string;
   description?: string;
+  requirements?: string;
   startAt: string;
   durationMin: number;
   capacity: number;
-  location: string;
+  locationName: string;
+  address: string;
+  city: string;
+  postalCode: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export const sessionsApi = {

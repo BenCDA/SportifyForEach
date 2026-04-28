@@ -3,9 +3,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Dumbbell, Mail, Lock, User, Briefcase, FileText } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { SportSelect } from '../components/SportSelect';
 import { useState } from 'react';
 import { cn } from '../lib/utils';
 import axios from 'axios';
@@ -20,13 +21,13 @@ const baseSchema = z.object({
     .regex(/[A-Z]/, 'Au moins une majuscule')
     .regex(/\d/, 'Au moins un chiffre'),
   role: z.enum(['CLIENT', 'COACH']),
-  specialty: z.string().optional(),
+  specialties: z.array(z.string()).optional(),
   bio: z.string().optional(),
 });
 
 const schema = baseSchema.refine(
-  (d) => d.role !== 'COACH' || (d.specialty && d.specialty.length > 0),
-  { message: 'Spécialité requise pour un compte coach', path: ['specialty'] },
+  (d) => d.role !== 'COACH' || (d.specialties && d.specialties.length > 0),
+  { message: 'Au moins une spécialité requise', path: ['specialties'] },
 );
 
 type FormData = z.infer<typeof schema>;
@@ -37,10 +38,12 @@ export function Register() {
   const [apiError, setApiError] = useState('');
   const [role, setRole] = useState<'CLIENT' | 'COACH'>('CLIENT');
 
-  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { role: 'CLIENT' },
+    defaultValues: { role: 'CLIENT', specialties: [] },
   });
+
+  const specialties = watch('specialties') ?? [];
 
   const handleRoleChange = (r: 'CLIENT' | 'COACH') => {
     setRole(r);
@@ -51,11 +54,14 @@ export function Register() {
     setApiError('');
     try {
       await registerUser(data);
-      toast.success('Compte créé avec succès !');
+      toast.success('Compte créé');
       navigate('/');
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        setApiError(err.response?.data?.error?.message as string ?? 'Erreur lors de l\'inscription');
+        setApiError(
+          (err.response?.data as { error?: { message?: string } })?.error?.message ??
+            "Erreur lors de l'inscription",
+        );
       } else {
         setApiError('Une erreur est survenue');
       }
@@ -63,148 +69,115 @@ export function Register() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-paper">
       {/* Left panel */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-gray-900 via-[#0D1220] to-[#0B0F19] flex-col items-center justify-center p-12">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 right-20 w-64 h-64 bg-accent rounded-full blur-3xl" />
-          <div className="absolute bottom-20 left-20 w-96 h-96 bg-orange-600 rounded-full blur-3xl" />
-        </div>
-        <div className="relative z-10 text-center max-w-sm">
-          <div className="w-16 h-16 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-accent/30">
-            <Dumbbell className="w-8 h-8 text-white" strokeWidth={2.5} />
-          </div>
-          <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">Rejoignez-nous</h1>
-          <p className="text-gray-400 text-lg leading-relaxed">
-            Créez votre compte et commencez votre parcours sportif dès aujourd&apos;hui.
+      <div className="hidden lg:flex lg:w-5/12 flex-col justify-between p-12 border-r border-ink/8">
+        <Link to="/" className="font-serif italic text-2xl text-ink">Sportify</Link>
+
+        <div>
+          <h1 className="font-serif italic text-[clamp(48px,5vw,68px)] text-ink leading-[0.95] tracking-tight mb-6">
+            Rejoignez<br />la communauté.
+          </h1>
+          <p className="font-sans text-sm text-muted max-w-xs leading-relaxed">
+            Sportif ou coach, Sportify vous connecte avec ce dont vous avez besoin.
           </p>
-          <div className="mt-10 space-y-3 text-left">
-            {[
-              ['🏃', 'Réservez vos séances en ligne'],
-              ['📊', 'Suivez vos performances'],
-              ['🤝', 'Connectez-vous avec des coachs certifiés'],
-            ].map(([icon, text]) => (
-              <div key={text} className="flex items-center gap-3 bg-gray-800/40 rounded-xl px-4 py-3 border border-gray-700/40">
-                <span className="text-xl">{icon}</span>
-                <span className="text-sm text-gray-300">{text}</span>
-              </div>
-            ))}
-          </div>
         </div>
+
+        <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-faint">
+          Gratuit · Sans engagement
+        </p>
       </div>
 
-      {/* Right panel */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-[#0B0F19] overflow-y-auto">
-        <div className="w-full max-w-md py-6">
-          <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-              <Dumbbell className="w-4 h-4 text-white" strokeWidth={2.5} />
-            </div>
-            <span className="font-bold text-xl text-gray-100">Sportify Pro</span>
+      {/* Right — form */}
+      <div className="flex-1 flex items-start justify-center p-8 bg-surface overflow-y-auto">
+        <div className="w-full max-w-sm py-4">
+          <div className="lg:hidden mb-10">
+            <span className="font-serif italic text-2xl text-ink">Sportify</span>
           </div>
 
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-100">Créer un compte</h2>
-            <p className="text-gray-500 mt-1">C&apos;est rapide et gratuit.</p>
-          </div>
+          <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-muted mb-8">
+            Créer un compte
+          </p>
 
           {/* Role toggle */}
-          <div className="flex gap-2 p-1 bg-gray-800/60 rounded-xl border border-gray-700 mb-6">
+          <div className="flex border border-ink/15 mb-8">
             {(['CLIENT', 'COACH'] as const).map((r) => (
               <button
                 key={r}
                 type="button"
                 onClick={() => handleRoleChange(r)}
                 className={cn(
-                  'flex-1 py-2 text-sm font-semibold rounded-lg transition-all duration-200',
-                  role === r
-                    ? 'bg-accent text-white shadow-md'
-                    : 'text-gray-400 hover:text-gray-200',
+                  'flex-1 py-2.5 font-mono text-[11px] uppercase tracking-[0.1em] transition-colors duration-150',
+                  role === r ? 'bg-ink text-paper' : 'text-muted hover:text-ink',
                 )}
               >
-                {r === 'CLIENT' ? '🏃 Sportif' : '🎯 Coach'}
+                {r === 'CLIENT' ? 'Sportif' : 'Coach'}
               </button>
             ))}
           </div>
           <input type="hidden" {...register('role')} />
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-7">
+            <div className="grid grid-cols-2 gap-5">
               <div>
-                <label htmlFor="reg-firstName" className="block text-sm font-medium text-gray-300 mb-1.5">Prénom</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <input {...register('firstName')} id="reg-firstName" className="input-field pl-9" placeholder="Alice" />
-                </div>
-                {errors.firstName && <p className="text-red-400 text-xs mt-1">{errors.firstName.message}</p>}
+                <label htmlFor="reg-firstName" className="input-label">Prénom</label>
+                <input {...register('firstName')} id="reg-firstName" className="input-field" placeholder="Alice" />
+                {errors.firstName && <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.08em] text-accent">{errors.firstName.message}</p>}
               </div>
               <div>
-                <label htmlFor="reg-lastName" className="block text-sm font-medium text-gray-300 mb-1.5">Nom</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                  <input {...register('lastName')} id="reg-lastName" className="input-field pl-9" placeholder="Dupont" />
-                </div>
-                {errors.lastName && <p className="text-red-400 text-xs mt-1">{errors.lastName.message}</p>}
+                <label htmlFor="reg-lastName" className="input-label">Nom</label>
+                <input {...register('lastName')} id="reg-lastName" className="input-field" placeholder="Dupont" />
+                {errors.lastName && <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.08em] text-accent">{errors.lastName.message}</p>}
               </div>
             </div>
 
             <div>
-              <label htmlFor="reg-email" className="block text-sm font-medium text-gray-300 mb-1.5">Email</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <input {...register('email')} id="reg-email" type="email" className="input-field pl-9" placeholder="email@exemple.com" />
-              </div>
-              {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>}
+              <label htmlFor="reg-email" className="input-label">Email</label>
+              <input {...register('email')} id="reg-email" type="email" className="input-field" placeholder="vous@exemple.com" />
+              {errors.email && <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.08em] text-accent">{errors.email.message}</p>}
             </div>
 
             <div>
-              <label htmlFor="reg-password" className="block text-sm font-medium text-gray-300 mb-1.5">Mot de passe</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                <input {...register('password')} id="reg-password" type="password" className="input-field pl-9" placeholder="••••••••" />
-              </div>
-              {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password.message}</p>}
+              <label htmlFor="reg-password" className="input-label">Mot de passe</label>
+              <input {...register('password')} id="reg-password" type="password" className="input-field" placeholder="••••••••" />
+              {errors.password && <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.08em] text-accent">{errors.password.message}</p>}
             </div>
 
             {role === 'COACH' && (
               <>
                 <div>
-                  <label htmlFor="reg-specialty" className="block text-sm font-medium text-gray-300 mb-1.5">
-                    Spécialité <span className="text-accent">*</span>
-                  </label>
-                  <div className="relative">
-                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                    <input {...register('specialty')} id="reg-specialty" className="input-field pl-9" placeholder="Ex: Yoga, CrossFit, Boxe..." />
-                  </div>
-                  {errors.specialty && <p className="text-red-400 text-xs mt-1">{errors.specialty.message}</p>}
+                  <p className="input-label">Spécialités <span className="text-accent normal-case">*</span> (max 3)</p>
+                  <SportSelect
+                    value={specialties}
+                    onChange={(v) => setValue('specialties', v, { shouldValidate: true })}
+                    error={errors.specialties?.message}
+                  />
                 </div>
                 <div>
-                  <label htmlFor="reg-bio" className="block text-sm font-medium text-gray-300 mb-1.5">Biographie</label>
-                  <div className="relative">
-                    <FileText className="absolute left-3 top-3 w-4 h-4 text-gray-500" />
-                    <textarea
-                      {...register('bio')}
-                      id="reg-bio"
-                      className="input-field pl-9 resize-none"
-                      rows={3}
-                      placeholder="Parlez de votre expérience, certifications..."
-                    />
-                  </div>
+                  <label htmlFor="reg-bio" className="input-label">Biographie</label>
+                  <textarea
+                    {...register('bio')}
+                    id="reg-bio"
+                    className="input-field resize-none"
+                    rows={3}
+                    placeholder="Expérience, certifications, approche…"
+                  />
                 </div>
               </>
             )}
 
             <ErrorMessage message={apiError} />
 
-            <button type="submit" disabled={isSubmitting} className="btn-primary w-full py-2.5 mt-1">
-              {isSubmitting ? 'Création du compte...' : 'Créer mon compte'}
+            <button type="submit" disabled={isSubmitting} className="btn-primary w-full gap-3">
+              {isSubmitting ? 'Création…' : 'Créer mon compte'}
+              {!isSubmitting && <ArrowRight className="w-4 h-4" strokeWidth={1.5} />}
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
+          <p className="mt-8 font-mono text-[11px] uppercase tracking-[0.1em] text-faint">
             Déjà un compte ?{' '}
-            <Link to="/login" className="text-accent hover:text-accent-hover font-medium transition-colors">
-              Se connecter
+            <Link to="/login" className="text-ink underline underline-offset-4 hover:text-muted transition-colors">
+              Connexion
             </Link>
           </p>
         </div>
