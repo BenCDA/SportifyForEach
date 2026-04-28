@@ -38,12 +38,15 @@ function TableRowSkeleton() {
   );
 }
 
+interface KPI { clients: number; coaches: number; admins: number }
+
 export function AdminUsers() {
   const [users, setUsers] = useState<User[]>([]);
   const [meta, setMeta] = useState({ page: 1, limit: 10, total: 0 });
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [kpi, setKpi] = useState<KPI | null>(null);
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } =
     useForm<EditFormData>({ resolver: zodResolver(editSchema) });
@@ -51,9 +54,19 @@ export function AdminUsers() {
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await usersApi.list({ page, limit: 10 });
+      const [res, clientsRes, coachesRes, adminsRes] = await Promise.all([
+        usersApi.list({ page, limit: 10 }),
+        usersApi.list({ page: 1, limit: 1, role: 'CLIENT' }),
+        usersApi.list({ page: 1, limit: 1, role: 'COACH' }),
+        usersApi.list({ page: 1, limit: 1, role: 'ADMIN' }),
+      ]);
       setUsers(res.data.data);
       setMeta(res.data.meta);
+      setKpi({
+        clients: clientsRes.data.meta.total,
+        coaches: coachesRes.data.meta.total,
+        admins:  adminsRes.data.meta.total,
+      });
     } catch {
       toast.error('Erreur lors du chargement');
     } finally {
@@ -107,6 +120,23 @@ export function AdminUsers() {
           </p>
         )}
       </div>
+
+      {kpi && (
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          {[
+            { label: 'Clients',  value: kpi.clients, accent: false },
+            { label: 'Coachs',   value: kpi.coaches, accent: false },
+            { label: 'Admins',   value: kpi.admins,  accent: true  },
+          ].map(({ label, value, accent }) => (
+            <div key={label} className="border border-ink/10 bg-surface p-5">
+              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-faint mb-2">{label}</p>
+              <p className={`font-serif italic text-4xl leading-none ${accent ? 'text-accent' : 'text-ink'}`}>
+                {value}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm border-collapse">
