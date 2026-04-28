@@ -1,5 +1,9 @@
 # Sportify Pro
 
+![CI](https://github.com/BenCDA/SportyForEach/actions/workflows/ci.yml/badge.svg)
+![Tests](https://img.shields.io/badge/tests-62%20passing-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-79%25-green)
+
 Application web de gestion de séances de coaching sportif. 3 rôles : CLIENT, COACH, ADMIN.
 
 ## Stack
