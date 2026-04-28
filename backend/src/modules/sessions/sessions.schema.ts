@@ -57,6 +57,7 @@ export const listSessionsSchema = z.object({
     from:    optionalDate,
     to:      optionalDate,
     coachId: optionalUuid,
+    q:       z.string().optional(),
     page:    z.string().optional().transform((v) => (v ? Number.parseInt(v, 10) : 1)),
     limit:   z.string().optional().transform((v) => (v ? Math.min(Number.parseInt(v, 10), 100) : 10)),
   }),

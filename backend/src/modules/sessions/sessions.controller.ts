@@ -5,11 +5,11 @@ import { success } from '../../utils/response';
 
 export async function listSessionsHandler(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { from, to, coachId, page = '1', limit = '10' } = req.query as Record<string, string>;
+    const { from, to, coachId, q, page = '1', limit = '10' } = req.query as Record<string, string>;
     const result = await sessionsService.listSessions(
       parseInt(page, 10),
       Math.min(parseInt(limit, 10), 100),
-      { from, to, coachId },
+      { from, to, coachId, q },
     );
     res.json(success(result.sessions, result.meta));
   } catch (err) {

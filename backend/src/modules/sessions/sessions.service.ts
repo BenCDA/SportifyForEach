@@ -41,7 +41,7 @@ function formatSession(s: {
 export async function listSessions(
   page: number,
   limit: number,
-  filters: { from?: string; to?: string; coachId?: string },
+  filters: { from?: string; to?: string; coachId?: string; q?: string },
 ) {
   const where: Record<string, unknown> = {};
   if (filters.from || filters.to) {
@@ -51,6 +51,13 @@ export async function listSessions(
     };
   }
   if (filters.coachId) where['coachId'] = filters.coachId;
+  if (filters.q) {
+    where['OR'] = [
+      { title:        { contains: filters.q, mode: 'insensitive' } },
+      { city:         { contains: filters.q, mode: 'insensitive' } },
+      { locationName: { contains: filters.q, mode: 'insensitive' } },
+    ];
+  }
 
   const [sessions, total] = await Promise.all([
     prisma.session.findMany({

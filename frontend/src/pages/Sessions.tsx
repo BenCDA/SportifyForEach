@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { LayoutGrid, List, SlidersHorizontal, X, ArrowRight } from 'lucide-react';
+import { LayoutGrid, List, SlidersHorizontal, X, ArrowRight, Search } from 'lucide-react';
 import { sessionsApi, Session } from '../api/sessions';
 import { useAuth } from '../context/AuthContext';
 import { SessionCard } from '../components/SessionCard';
@@ -24,6 +24,15 @@ export function Sessions() {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSearchChange = (value: string) => {
+    setSearchInput(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => { setSearchQuery(value); setPage(1); }, 300);
+  };
 
   const fetchSessions = useCallback(async () => {
     setLoading(true);
@@ -31,6 +40,7 @@ export function Sessions() {
       const params: Record<string, unknown> = { page, limit: 10 };
       if (filters.from) params.from = filters.from;
       if (filters.to) params.to = filters.to;
+      if (searchQuery) params.q = searchQuery;
       const res = await sessionsApi.list(params);
       setSessions(res.data.data);
       setMeta(res.data.meta);
@@ -39,7 +49,7 @@ export function Sessions() {
     } finally {
       setLoading(false);
     }
-  }, [page, filters]);
+  }, [page, filters, searchQuery]);
 
   useEffect(() => { void fetchSessions(); }, [fetchSessions]);
 
@@ -48,14 +58,14 @@ export function Sessions() {
     if (session) { setSelectedSession(session); setBookingModalOpen(true); }
   };
 
-  const resetFilters = () => { setFilters({ from: '', to: '' }); setPage(1); };
-  const hasFilters = filters.from || filters.to;
+  const resetFilters = () => { setFilters({ from: '', to: '' }); setSearchInput(''); setSearchQuery(''); setPage(1); };
+  const hasFilters = filters.from || filters.to || searchQuery;
   const plural = meta.total === 1 ? '' : 's';
 
   return (
     <div>
       {/* Header */}
-      <div className="flex items-end justify-between mb-8 pb-6 border-b border-ink/8">
+      <div className="flex items-end justify-between mb-6 pb-6 border-b border-ink/8">
         <div>
           <h1 className="font-serif italic text-[clamp(32px,4vw,48px)] text-ink leading-tight tracking-tight">
             Séances
@@ -103,6 +113,19 @@ export function Sessions() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Search bar */}
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" strokeWidth={1.5} />
+        <input
+          type="search"
+          placeholder="Rechercher par titre, ville, lieu…"
+          value={searchInput}
+          onChange={(e) => handleSearchChange(e.target.value)}
+          className="input-field pl-9 text-sm w-full"
+          aria-label="Rechercher des séances"
+        />
       </div>
 
       {/* Filters drawer */}

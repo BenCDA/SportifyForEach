@@ -29,6 +29,7 @@ export interface SessionFilters {
   from?: string;
   to?: string;
   coachId?: string;
+  q?: string;
   page?: number;
   limit?: number;
 }
