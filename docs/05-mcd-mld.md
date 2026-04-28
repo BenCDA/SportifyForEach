@@ -18,7 +18,7 @@ erDiagram
         uuid id PK
         uuid userId FK,UK
         string bio
-        string specialty
+        string[] specialties
     }
 
     SESSION {
@@ -26,10 +26,16 @@ erDiagram
         uuid coachId FK
         string title
         string description
+        string requirements
         datetime startAt
         int durationMin
         int capacity
-        string location
+        string locationName
+        string address
+        string city
+        string postalCode
+        float latitude
+        float longitude
         datetime createdAt
     }
 
@@ -40,9 +46,19 @@ erDiagram
         datetime createdAt
     }
 
+    REFRESH_TOKEN {
+        uuid id PK
+        uuid userId FK
+        string tokenHash UK
+        datetime expiresAt
+        datetime revokedAt
+        datetime createdAt
+    }
+
     USER ||--o| COACH_PROFILE : "has profile"
     USER ||--o{ SESSION : "coaches"
     USER ||--o{ BOOKING : "makes"
+    USER ||--o{ REFRESH_TOKEN : "owns"
     SESSION ||--o{ BOOKING : "has"
 ```
 
@@ -54,90 +70,32 @@ USER(id, email*, passwordHash, firstName, lastName, role, createdAt)
   UK: email
   role ∈ {CLIENT, COACH, ADMIN}
 
-COACH_PROFILE(id, userId#, bio, specialty)
+COACH_PROFILE(id, userId#, bio, specialties[])
   PK: id
-  FK: userId → USER(id)
+  FK: userId → USER(id) ON DELETE CASCADE
   UK: userId
 
-SESSION(id, coachId#, title, description, startAt, durationMin, capacity, location, createdAt)
+SESSION(id, coachId#, title, description, requirements, startAt,
+        durationMin, capacity, locationName, address, city, postalCode,
+        latitude, longitude, createdAt)
   PK: id
-  FK: coachId → USER(id)
-  INDEX: startAt
+  FK: coachId → USER(id) ON DELETE CASCADE
+  INDEX: startAt, city
 
 BOOKING(id, sessionId#, clientId#, createdAt)
   PK: id
-  FK: sessionId → SESSION(id)
-  FK: clientId → USER(id)
+  FK: sessionId → SESSION(id) ON DELETE CASCADE
+  FK: clientId → USER(id) ON DELETE CASCADE
   UK: (sessionId, clientId)
   INDEX: (clientId, sessionId)
+
+REFRESH_TOKEN(id, userId#, tokenHash*, expiresAt, revokedAt, createdAt)
+  PK: id
+  FK: userId → USER(id) ON DELETE CASCADE
+  UK: tokenHash
+  INDEX: userId
 ```
 
 ## Script SQL
 
-```sql
--- Enum type for user roles
-CREATE TYPE "Role" AS ENUM ('CLIENT', 'COACH', 'ADMIN');
-
--- Users table
-CREATE TABLE "User" (
-    "id"           UUID         NOT NULL DEFAULT gen_random_uuid(),
-    "email"        TEXT         NOT NULL,
-    "passwordHash" TEXT         NOT NULL,
-    "firstName"    TEXT         NOT NULL,
-    "lastName"     TEXT         NOT NULL,
-    "role"         "Role"       NOT NULL DEFAULT 'CLIENT',
-    "createdAt"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "User_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "User_email_key" UNIQUE ("email")
-);
-
--- Coach profiles table
-CREATE TABLE "CoachProfile" (
-    "id"        UUID NOT NULL DEFAULT gen_random_uuid(),
-    "userId"    UUID NOT NULL,
-    "bio"       TEXT,
-    "specialty" TEXT,
-
-    CONSTRAINT "CoachProfile_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "CoachProfile_userId_key" UNIQUE ("userId"),
-    CONSTRAINT "CoachProfile_userId_fkey" FOREIGN KEY ("userId")
-        REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
-
--- Sessions table
-CREATE TABLE "Session" (
-    "id"          UUID         NOT NULL DEFAULT gen_random_uuid(),
-    "coachId"     UUID         NOT NULL,
-    "title"       TEXT         NOT NULL,
-    "description" TEXT,
-    "startAt"     TIMESTAMP(3) NOT NULL,
-    "durationMin" INTEGER      NOT NULL,
-    "capacity"    INTEGER      NOT NULL,
-    "location"    TEXT         NOT NULL,
-    "createdAt"   TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "Session_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "Session_coachId_fkey" FOREIGN KEY ("coachId")
-        REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
-
-CREATE INDEX "Session_startAt_idx" ON "Session"("startAt");
-
--- Bookings table
-CREATE TABLE "Booking" (
-    "id"        UUID         NOT NULL DEFAULT gen_random_uuid(),
-    "sessionId" UUID         NOT NULL,
-    "clientId"  UUID         NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT "Booking_pkey" PRIMARY KEY ("id"),
-    CONSTRAINT "Booking_sessionId_clientId_key" UNIQUE ("sessionId", "clientId"),
-    CONSTRAINT "Booking_sessionId_fkey" FOREIGN KEY ("sessionId")
-        REFERENCES "Session"("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "Booking_clientId_fkey" FOREIGN KEY ("clientId")
-        REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE
-);
-
-CREATE INDEX "Booking_clientId_sessionId_idx" ON "Booking"("clientId", "sessionId");
-```
+Voir [script.sql](script.sql) pour le script complet de création reflétant le schéma courant.
