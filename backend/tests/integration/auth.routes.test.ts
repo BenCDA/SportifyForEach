@@ -157,6 +157,25 @@ describe('Auth Routes', () => {
     });
   });
 
+  describe('POST /api/auth/logout', () => {
+    it('returns 204 with valid refresh token', async () => {
+      const { signRefreshToken } = await import('../../src/utils/jwt');
+      const token = signRefreshToken({ userId: 'u1', role: 'CLIENT' });
+      mockRefreshToken.findUnique.mockResolvedValueOnce({
+        id: 'rt-1', userId: 'u1', revokedAt: null,
+      });
+      mockRefreshToken.update.mockResolvedValueOnce({});
+
+      const res = await request(app).post('/api/auth/logout').send({ refreshToken: token });
+      expect(res.status).toBe(204);
+    });
+
+    it('returns 204 even without a refresh token (idempotent)', async () => {
+      const res = await request(app).post('/api/auth/logout').send({});
+      expect(res.status).toBe(204);
+    });
+  });
+
   describe('GET /health', () => {
     it('returns 200', async () => {
       const res = await request(app).get('/health');

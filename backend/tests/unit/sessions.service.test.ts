@@ -93,5 +93,66 @@ describe('SessionsService', () => {
       expect(result.meta).toEqual({ page: 1, limit: 10, total: 1 });
       expect(result.sessions).toHaveLength(1);
     });
+
+    it('passes search query to Prisma OR filter', async () => {
+      vi.mocked(prisma.session.findMany).mockResolvedValueOnce([]);
+      vi.mocked(prisma.session.count).mockResolvedValueOnce(0);
+
+      await sessionsService.listSessions(1, 10, { q: 'yoga' });
+
+      expect(vi.mocked(prisma.session.findMany)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ OR: expect.any(Array) }),
+        }),
+      );
+    });
+  });
+
+  describe('getSessionById', () => {
+    it('throws SESSION_NOT_FOUND when session does not exist', async () => {
+      vi.mocked(prisma.session.findUnique).mockResolvedValueOnce(null);
+      await expect(
+        sessionsService.getSessionById('nope', 'u1', 'CLIENT'),
+      ).rejects.toMatchObject({ code: 'SESSION_NOT_FOUND', statusCode: 404 });
+    });
+
+    it('hides participants from non-owner client', async () => {
+      const fullSession = {
+        ...mockSession, coachId: 'coach-1',
+        coach: { id: 'coach-1', firstName: 'A', lastName: 'B', email: 'a@b.com' },
+        _count: { bookings: 1 },
+        bookings: [{ client: { id: 'c1', firstName: 'X', lastName: 'Y', email: 'x@y.com' } }],
+      };
+      vi.mocked(prisma.session.findUnique).mockResolvedValueOnce(fullSession as never);
+
+      const result = await sessionsService.getSessionById('session-1', 'client-99', 'CLIENT');
+      expect(result.participants).toBeUndefined();
+    });
+
+    it('exposes participants to session owner coach', async () => {
+      const fullSession = {
+        ...mockSession, coachId: 'coach-1',
+        coach: { id: 'coach-1', firstName: 'A', lastName: 'B', email: 'a@b.com' },
+        _count: { bookings: 1 },
+        bookings: [{ client: { id: 'c1', firstName: 'X', lastName: 'Y', email: 'x@y.com' } }],
+      };
+      vi.mocked(prisma.session.findUnique).mockResolvedValueOnce(fullSession as never);
+
+      const result = await sessionsService.getSessionById('session-1', 'coach-1', 'COACH');
+      expect(result.participants).toHaveLength(1);
+    });
+  });
+
+  describe('createSession', () => {
+    it('creates session with provided data', async () => {
+      const created = { ...mockSession, coach: { id: 'coach-1', firstName: 'A', lastName: 'B', email: 'a@b.com' }, _count: { bookings: 0 } };
+      vi.mocked(prisma.session.create).mockResolvedValueOnce(created as never);
+
+      const input = {
+        title: 'Yoga', startAt: new Date().toISOString(), durationMin: 60, capacity: 10,
+        locationName: 'Studio', address: '1 rue X', city: 'Lille', postalCode: '59000',
+      };
+      await expect(sessionsService.createSession('coach-1', input)).resolves.toBeDefined();
+    });
   });
 });
