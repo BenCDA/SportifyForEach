@@ -6,7 +6,7 @@ interface AuthContextValue {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterPayload) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
@@ -16,43 +16,31 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const logout = useCallback(() => {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (refreshToken) {
-      authApi.logout(refreshToken).catch(() => undefined);
-    }
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    setUser(null);
-  }, []);
-
+  // Restore session on mount by calling /me (cookie sent automatically).
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      setLoading(false);
-      return;
-    }
     authApi
       .me()
       .then((res) => setUser(res.data.data))
-      .catch(() => logout())
+      .catch(() => setUser(null))
       .finally(() => setLoading(false));
-  }, [logout]);
+  }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await authApi.login({ email, password });
-    const { accessToken, refreshToken, user: userData } = res.data.data;
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
-    setUser(userData);
+    await authApi.login({ email, password });
+    // Cookie is now set by the server; fetch user from /me.
+    const res = await authApi.me();
+    setUser(res.data.data);
   }, []);
 
   const register = useCallback(async (data: RegisterPayload) => {
-    const res = await authApi.register(data);
-    const { accessToken, refreshToken, user: userData } = res.data.data;
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
-    setUser(userData);
+    await authApi.register(data);
+    const res = await authApi.me();
+    setUser(res.data.data);
+  }, []);
+
+  const logout = useCallback(async () => {
+    await authApi.logout().catch(() => undefined);
+    setUser(null);
   }, []);
 
   const refreshUser = useCallback(async () => {
@@ -65,11 +53,7 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
     [user, loading, login, register, logout, refreshUser],
   );
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextValue {

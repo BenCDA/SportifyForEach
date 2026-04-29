@@ -112,12 +112,12 @@ export async function refresh(token: string) {
   const user = await prisma.user.findUnique({ where: { id: payload.userId } });
   if (!user) throw new AppError(401, 'USER_NOT_FOUND', 'Utilisateur introuvable');
 
-  const newPayload     = { userId: user.id, role: user.role };
-  const accessToken    = signAccessToken(newPayload);
+  const newPayload      = { userId: user.id, role: user.role };
+  const accessToken     = signAccessToken(newPayload);
   const newRefreshToken = signRefreshToken(newPayload);
   await storeRefreshToken(user.id, newRefreshToken);
 
-  return { accessToken, refreshToken: newRefreshToken };
+  return { accessToken, refreshToken: newRefreshToken, user: sanitizeUser(user) };
 }
 
 export async function logout(token: string): Promise<void> {

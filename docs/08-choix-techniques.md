@@ -2,9 +2,38 @@
 
 ## Résumé des décisions architecturales
 
-### 1. Structure des tokens JWT
-**Décision :** Access token 15 min en mémoire (React Context), refresh token 7 jours en localStorage.
-**Raison :** Compromis entre sécurité (access token court-vécu) et UX (pas de reconnexion fréquente). Le refresh en localStorage simplifie l'implémentation tout en conservant une durée raisonnable.
+### 1. Sécurité de l'authentification : cookies HttpOnly + CSRF double-submit
+
+**Décision :** Tokens JWT stockés dans des cookies HttpOnly (jamais dans `localStorage`). Protection CSRF via le schéma OWASP Double-Submit Cookie.
+
+**Raison :** `localStorage` est accessible par tout script de la page (XSS). Un cookie HttpOnly est opaque au JavaScript — même une injection XSS ne peut pas lire le token. Le cookie `SameSite=Lax` sur l'access token protège contre CSRF pour les navigations cross-site, mais pas pour les requêtes cross-origin avec `fetch`/`axios`. La couche CSRF double-submit couvre ce cas résiduel.
+
+**Architecture des cookies :**
+
+| Cookie | HttpOnly | SameSite | TTL | Rôle |
+|--------|----------|----------|-----|------|
+| `access_token` | ✅ | Lax | 15 min | Authentification courante |
+| `refresh_token` | ✅ | Strict | 7 jours | Rotation silencieuse (path `/api/auth`) |
+| `csrf_token` | ❌ | Strict | 15 min | Double-submit CSRF (lu par JS) |
+
+**Flux CSRF :** À chaque login/register/refresh, le serveur émet les 3 cookies simultanément. Côté frontend, l'intercepteur Axios lit `csrf_token` via `document.cookie` et l'ajoute en header `X-CSRF-Token` sur toutes les requêtes mutantes. Le middleware `csrfProtect` compare cookie et header — divergence → 403 `CSRF_INVALID`.
+
+**Bypass CSRF intentionnels :**
+- Méthodes sûres (`GET/HEAD/OPTIONS`) : pas de side-effect, pas de protection nécessaire
+- Header `Authorization: Bearer ...` présent : client API ou suite de tests, pas cookie-driven
+- Pas de cookie `access_token` : session inexistante, le middleware d'auth retournera 401
+
+**Comparaison localStorage vs cookie HttpOnly :**
+
+| Critère | localStorage | Cookie HttpOnly |
+|---------|-------------|-----------------|
+| Accessible en XSS | ✅ Oui (vulnérable) | ❌ Non (protégé) |
+| Persiste après fermeture | ✅ Oui | Selon `maxAge` |
+| Envoi automatique cross-origin | ❌ Non (header manuel) | Selon `SameSite` |
+| Risque CSRF | ❌ Non | ✅ Nécessite protection |
+| SSR-compatible | ⚠️ Non (window) | ✅ Oui |
+
+**Refresh silencieux avec queue :** L'intercepteur de réponse Axios intercepte les 401, appelle `/api/auth/refresh` (cookie envoyé automatiquement), met en file les requêtes parallèles pendant le refresh, puis les rejoue. Si le refresh échoue, toutes les requêtes en file sont rejetées et l'utilisateur est redirigé vers `/login`.
 
 ### 2. Format des IDs
 **Décision :** UUID v4 (via `gen_random_uuid()` PostgreSQL / `crypto.randomUUID()` Prisma).
@@ -118,7 +147,7 @@
 |-----------|----------------|
 | Format retour annulation booking | 204 No Content (standard REST DELETE) |
 | Un ADMIN peut-il créer des séances ? | Oui, rôle COACH\|ADMIN sur POST /sessions |
-| Refresh token stocké côté serveur ? | Non (stateless) — rotation simple côté client |
+| Refresh token stocké côté serveur ? | Oui (table `RefreshToken`) — rotation avec révocation |
 | La suppression d'une séance supprime les bookings ? | Oui, cascade DB |
 | GET /sessions retourne les séances passées ? | Oui, avec filtre `from`/`to` optionnel |
 | Participants visibles sur GET /sessions/:id ? | Uniquement si coach propriétaire ou admin |

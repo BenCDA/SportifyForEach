@@ -106,7 +106,7 @@
 |----------|--------|-------------|--------|-------------|
 | Authentification JWT | ✅ | `auth.service.ts` + `middlewares/auth.ts` | Access 15 min + refresh 7 j + rotation | Replay attack detection implémentée |
 | CRUD complet | ✅ | sessions (C/R/U/D), bookings (C/R/D), users (R/U/D), auth (register/login/refresh) | Tous les handlers présents | — |
-| Gestion des règles métier | ✅ | `bookings.service.ts` (transaction), `sessions.service.ts` (FORBIDDEN), `auth.service.ts` (overlap) | 62 tests passent | — |
+| Gestion des règles métier | ✅ | `bookings.service.ts` (transaction), `sessions.service.ts` (FORBIDDEN), `auth.service.ts` (overlap) | 80 tests passent | — |
 
 #### Frontend (minimum)
 
@@ -124,7 +124,7 @@
 
 | Exigence | Statut | Emplacement | Preuve | Commentaire |
 |----------|--------|-------------|--------|-------------|
-| Tests unitaires (minimum API) | ✅ | `backend/tests/` — 7 fichiers | 62/62 passent (`npm test`) | Unit (auth, sessions, bookings, users, jwt) + intégration (auth routes, bookings routes) |
+| Tests unitaires (minimum API) | ✅ | `backend/tests/` — 7 fichiers | 80/80 passent (`npm test`) | Unit (auth, sessions, bookings, users, jwt) + intégration (auth routes, bookings routes) |
 | Tests endpoints sensibles (401, 403, 409) | ✅ | `tests/integration/` | 401 sans token, 403 mauvais rôle, 409 collision | — |
 | Couverture ≥ 75 % services métier | ✅ | `npm run test:coverage` | 79 % global (badge README) | `users.service` testé ; tous les services métier principaux couverts |
 
@@ -151,7 +151,7 @@
 | Historique de commits cohérent | ⚠️ | `git log --oneline` | **9 commits** avec messages conventionnels (`feat:`, `fix:`, `docs:`, `test:`, `chore:`) | Amélioré depuis 3 → 9 commits. Idéalement ≥ 15 pour montrer une démarche itérative au jury |
 | Code structuré | ✅ | `backend/src/modules/` + `frontend/src/` | Feature-based modules, séparation concerns | — |
 | README complet | ✅ | `README.md` | Description, install, exécution, choix techniques | — |
-| Tests | ✅ | `backend/tests/` | 62 tests verts, 79 % coverage | — |
+| Tests | ✅ | `backend/tests/` | 80 tests verts, 79 % coverage | — |
 | Dockerfile / procédure déploiement | ✅ | `backend/Dockerfile`, `frontend/Dockerfile`, `docker-compose.yml` | `docker compose up --build` fonctionnel | ⚠️ `.env.example` présent ? À vérifier |
 | Diagrammes (UML, MCD…) | ✅ | `docs/` (9 fichiers) | Cas d'usage, classes, MCD/MLD, archi, wireframes, audit | Synchronisés avec le schéma réel (RefreshToken, location, specialties) |
 
@@ -178,11 +178,13 @@
 
 | Critère | Statut | Preuve |
 |---------|--------|--------|
-| Authentification | ✅ | JWT access + refresh + rotation + replay detection |
+| Authentification | ✅ | JWT cookies HttpOnly (access 15 min, refresh 7 j) + rotation + replay detection |
+| Protection XSS (tokens) | ✅ | Tokens en cookies HttpOnly — inaccessibles via `document.cookie` / `localStorage` |
+| Protection CSRF | ✅ | OWASP Double-Submit Cookie : `csrf_token` cookie (JS-readable) + header `X-CSRF-Token` vérifiés à chaque requête mutante |
 | Gestion des accès | ✅ | `requireRole()` middleware, ownership checks dans les services |
 | Rate limiting | ✅ | `express-rate-limit` sur `/auth/register` et `/auth/login` (10 req/15 min) |
 | Pas de fuite mot de passe | ✅ | `sanitizeUser()` dans auth.service et users.service |
-| Logout serveur | ✅ | `POST /api/auth/logout` révoque le tokenHash en DB + frontend appelle l'endpoint avant le clear localStorage |
+| Logout serveur | ✅ | `POST /api/auth/logout` révoque le refresh token en DB + efface les 3 cookies côté serveur |
 
 #### Documentation
 
@@ -214,7 +216,7 @@
 
 ### Tests backend
 ```
-npm test → 62/62 ✅ (7 fichiers, unit + intégration)
+npm test → 80/80 ✅ (8 fichiers, unit + intégration)
 npm run test:coverage → 79 % global ✅
 ```
 
@@ -250,7 +252,7 @@ frontend: 0 erreurs, 0 warnings ✅
 | 401 sans JWT | ✅ | Testé intégration |
 | 403 élévation de privilèges (client → POST /sessions) | ✅ | requireRole('COACH','ADMIN') |
 | Swagger /api/docs | ✅ | openapi.yaml chargé dynamiquement |
-| Logout serveur | ✅ | POST /api/auth/logout révoque tokenHash en DB ; frontend appelle l'endpoint avant clear localStorage |
+| Logout serveur | ✅ | POST /api/auth/logout révoque refresh token en DB + efface les 3 cookies HttpOnly côté serveur |
 | Recherche séances | ✅ | Barre debounced 300 ms → ?q= ILIKE titre/ville/lieu |
 
 ---

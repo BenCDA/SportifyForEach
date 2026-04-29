@@ -7,12 +7,17 @@ export interface AuthRequest extends Request {
 }
 
 export function authenticate(req: AuthRequest, _res: Response, next: NextFunction): void {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
+  // Cookie-first auth; fall back to Authorization header for API clients / tests
+  const cookieToken = (req.cookies as Record<string, string> | undefined)?.access_token;
+  const bearerToken = req.headers.authorization?.startsWith('Bearer ')
+    ? req.headers.authorization.slice(7)
+    : undefined;
+
+  const token = cookieToken ?? bearerToken;
+  if (!token) {
     next(new AppError(401, 'UNAUTHORIZED', 'No token provided'));
     return;
   }
-  const token = authHeader.slice(7);
   try {
     req.user = verifyAccessToken(token);
     next();

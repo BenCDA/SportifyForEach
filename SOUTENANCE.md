@@ -39,8 +39,9 @@
 - Tenter `PUT /api/sessions/:id` sur la séance d'un autre coach → 403 en live
 
 ### 6. Tests (2 min)
-- `cd backend && npm test` → 62 tests verts en direct
+- `cd backend && npm test` → 80 tests verts en direct
 - Pointer `tests/integration/bookings.routes.test.ts` : scénarios SESSION_FULL, ALREADY_BOOKED, 403
+- Pointer `tests/integration/uploads.routes.test.ts` : INVALID_FILE_TYPE, FILE_TOO_LARGE, 403 autre coach
 
 ### 7. CI/CD (1 min)
 - Montrer `.github/workflows/ci.yml` : lint + typecheck + tests à chaque push
@@ -53,7 +54,8 @@
 | Choix | Pourquoi | Alternative écartée |
 |-------|----------|---------------------|
 | **Prisma** | Type-safe, migrations versionnées, ORM mature | TypeORM — moins ergonomique pour PostgreSQL |
-| **JWT access (15 min) + refresh (7 j)** | Access court = surface d'attaque réduite si intercepté | Session côté serveur — état difficile à scaler |
+| **JWT en cookies HttpOnly** | Tokens inaccessibles au JavaScript (XSS mitigé) + CSRF double-submit cookie pour les requêtes mutantes | localStorage — accessible en XSS, facile à exfiltrer |
+| **JWT access (15 min) + refresh (7 j)** | Access court = surface d'attaque réduite si intercepté ; refresh en cookie HttpOnly path=/api/auth | Session côté serveur — état difficile à scaler |
 | **Rotation des refresh tokens** | Détection de rejeu : si token révoqué réutilisé, tous les tokens de l'utilisateur sont révoqués | Token statique — vulnérable au vol silencieux |
 | **Transactions Prisma pour les réservations** | Prévient les race conditions sur la capacité en charge concurrente | Vérification en 2 temps — TOCTOU possible |
 | **Zod** | Validation back + front avec le même schéma, inférence TypeScript native | Joi — pas d'inférence TypeScript |
@@ -66,10 +68,10 @@
 
 ## Points forts à mettre en avant
 
-1. **Sécurité réelle** — Rotation des refresh tokens avec détection de rejeu, rate limiting sur `/auth/login`, bcrypt cost 10, sanitizeUser systématique (jamais de `passwordHash`), upload sécurisé (MIME check, size limit, nommage hashé)
+1. **Sécurité réelle** — Tokens JWT en cookies HttpOnly (XSS mitigé), CSRF double-submit cookie, rotation des refresh tokens avec détection de rejeu, rate limiting sur `/auth/login`, bcrypt cost 10, sanitizeUser systématique (jamais de `passwordHash`), upload sécurisé (MIME check, size limit, nommage hashé)
 2. **Transactions atomiques** — La vérification de capacité et de chevauchement horaire est faite dans une seule transaction Prisma → race conditions impossibles même sous charge
 3. **Validation bout en bout** — Zod valide les inputs côté API ET côté front (React Hook Form + Zod resolver) avec les mêmes règles
-4. **62 tests, 79 % coverage** — Unit (services mockés) + intégration (supertest sur vrais handlers), tous les cas d'erreur métier couverts
+4. **80 tests, 79 % coverage** — Unit (services mockés) + intégration (supertest sur vrais handlers), tous les cas d'erreur métier couverts (upload : MIME invalide, taille dépassée, 403 non-propriétaire)
 5. **CI/CD complet** — GitHub Actions : lint + typecheck + tests à chaque push, build + push Docker sur GHCR à chaque tag
 6. **Médias** — Upload avatar (react-easy-crop crop UI, resize sharp 512×512 webp), images de sport auto via Unsplash désaturé, cover optionnelle par séance, service statique avec headers immuables
 7. **UX pensée** — Export ICS, recherche debounced 300 ms, squelettes de chargement, confirmation 2 étapes, page profil, bannières KPI admin
@@ -80,9 +82,8 @@
 
 | Limitation | Correction V2 |
 |-----------|---------------|
-| Logout ne révoque pas l'access token (expire dans 15 min) | Blacklist Redis des JTI révoqués |
+| Logout ne révoque pas l'access token immédiatement (expire dans 15 min) | Blacklist Redis des JTI révoqués |
 | Pas de soft-delete sur User | Ajouter `deletedAt`, filtrer les requêtes, conserver les séances/réservations historiques |
-| Frontend stocke les tokens en localStorage | Passer l'access token en mémoire, le refresh en httpOnly cookie |
 | Pas de tests frontend | Playwright e2e : register → login → réservation |
 | Pas de notifications push | WebSocket ou SSE pour alertes en temps réel |
 | Localisation via Nominatim (usage limité en prod) | Passer sur Mapbox ou Google Maps avec clé API |

@@ -50,11 +50,11 @@ sequenceDiagram
     API->>DB: SELECT user WHERE email=?
     DB-->>API: User row
     API->>API: bcrypt.compare(password, hash)
-    API-->>Client: {accessToken (15min), refreshToken (7j)}
+    API-->>Client: Set-Cookie: access_token (HttpOnly), refresh_token (HttpOnly), csrf_token
 
-    Note over Client: Stocke les tokens en mémoire / localStorage
+    Note over Client: Tokens dans cookies HttpOnly (jamais localStorage)
 
-    Client->>API: GET /api/sessions\nAuthorization: Bearer <accessToken>
+    Client->>API: GET /api/sessions\nCookie: access_token=...
     API->>API: jwt.verify(accessToken)
     API->>DB: SELECT sessions...
     DB-->>API: Sessions[]

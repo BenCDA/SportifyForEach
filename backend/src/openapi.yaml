@@ -11,10 +11,15 @@ servers:
 
 components:
   securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+      description: |
+        Cookie HttpOnly `access_token` émis par `/auth/login` ou `/auth/register`.
+        Les requêtes mutantes (POST/PUT/PATCH/DELETE) doivent également inclure le
+        header `X-CSRF-Token` dont la valeur correspond au cookie `csrf_token`
+        (schéma OWASP Double-Submit Cookie).
 
   schemas:
     Error:
@@ -44,6 +49,10 @@ components:
         role:
           type: string
           enum: [CLIENT, COACH, ADMIN]
+        avatarUrl:
+          type: string
+          nullable: true
+          example: /uploads/avatars/user-id-1234567890.webp
         createdAt:
           type: string
           format: date-time
@@ -92,6 +101,14 @@ components:
               type: string
             email:
               type: string
+        sport:
+          type: string
+          nullable: true
+          example: Yoga
+        coverImageUrl:
+          type: string
+          nullable: true
+          example: /uploads/sessions/session-id-1234567890.webp
         bookingsCount:
           type: integer
 
@@ -278,7 +295,7 @@ paths:
       summary: Get current user profile
       tags: [Auth]
       security:
-        - BearerAuth: []
+        - cookieAuth: []
       responses:
         '200':
           description: Current user
@@ -301,7 +318,7 @@ paths:
       summary: List sessions
       tags: [Sessions]
       security:
-        - BearerAuth: []
+        - cookieAuth: []
       parameters:
         - in: query
           name: from
@@ -353,7 +370,7 @@ paths:
       summary: Create a session (COACH or ADMIN)
       tags: [Sessions]
       security:
-        - BearerAuth: []
+        - cookieAuth: []
       requestBody:
         required: true
         content:
@@ -399,7 +416,7 @@ paths:
       summary: Get session by ID
       tags: [Sessions]
       security:
-        - BearerAuth: []
+        - cookieAuth: []
       parameters:
         - in: path
           name: id
@@ -428,7 +445,7 @@ paths:
       summary: Update a session (COACH owner or ADMIN)
       tags: [Sessions]
       security:
-        - BearerAuth: []
+        - cookieAuth: []
       parameters:
         - in: path
           name: id
@@ -477,7 +494,7 @@ paths:
       summary: Delete a session (COACH owner or ADMIN)
       tags: [Sessions]
       security:
-        - BearerAuth: []
+        - cookieAuth: []
       parameters:
         - in: path
           name: id
@@ -495,12 +512,97 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /sessions/{id}/cover:
+    post:
+      summary: Upload or replace a session's cover image (COACH owner or ADMIN)
+      tags: [Sessions]
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [cover]
+              properties:
+                cover:
+                  type: string
+                  format: binary
+                  description: JPEG, PNG or WebP image — max 5 MB
+      responses:
+        '200':
+          description: Cover uploaded, returns new URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      coverImageUrl:
+                        type: string
+        '400':
+          description: No file, invalid MIME type, or file too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Not the session owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete a session's cover image (COACH owner or ADMIN)
+      tags: [Sessions]
+      security:
+        - cookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Cover deleted
+        '403':
+          description: Not the session owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /bookings:
     post:
       summary: Create a booking (CLIENT only)
       tags: [Bookings]
       security:
-        - BearerAuth: []
+        - cookieAuth: []
       requestBody:
         required: true
         content:
@@ -534,7 +636,7 @@ paths:
       summary: List my bookings
       tags: [Bookings]
       security:
-        - BearerAuth: []
+        - cookieAuth: []
       parameters:
         - in: query
           name: page
@@ -566,7 +668,7 @@ paths:
       summary: Cancel a booking
       tags: [Bookings]
       security:
-        - BearerAuth: []
+        - cookieAuth: []
       parameters:
         - in: path
           name: id
@@ -595,7 +697,7 @@ paths:
       summary: List all users (ADMIN only)
       tags: [Users]
       security:
-        - BearerAuth: []
+        - cookieAuth: []
       parameters:
         - in: query
           name: page
@@ -632,7 +734,7 @@ paths:
       summary: List available sports
       tags: [Sports]
       security:
-        - BearerAuth: []
+        - cookieAuth: []
       responses:
         '200':
           description: List of sports
@@ -652,7 +754,7 @@ paths:
       summary: Get current user profile
       tags: [Users]
       security:
-        - BearerAuth: []
+        - cookieAuth: []
       responses:
         '200':
           description: Current user
@@ -664,12 +766,71 @@ paths:
                   data:
                     $ref: '#/components/schemas/User'
 
+  /users/me/avatar:
+    post:
+      summary: Upload or replace current user's avatar
+      tags: [Users]
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [avatar]
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+                  description: JPEG, PNG or WebP image — max 2 MB
+      responses:
+        '200':
+          description: Avatar uploaded, returns new URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      avatarUrl:
+                        type: string
+        '400':
+          description: No file, invalid MIME type, or file too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete current user's avatar
+      tags: [Users]
+      security:
+        - cookieAuth: []
+      responses:
+        '204':
+          description: Avatar deleted
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /users/{id}:
     put:
       summary: Update a user (ADMIN only)
       tags: [Users]
       security:
-        - BearerAuth: []
+        - cookieAuth: []
       parameters:
         - in: path
           name: id
@@ -709,7 +870,7 @@ paths:
       summary: Delete a user (ADMIN only)
       tags: [Users]
       security:
-        - BearerAuth: []
+        - cookieAuth: []
       parameters:
         - in: path
           name: id

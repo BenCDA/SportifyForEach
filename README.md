@@ -1,7 +1,7 @@
 # Sportify Pro
 
 ![CI](https://github.com/BenCDA/SportyForEach/actions/workflows/ci.yml/badge.svg)
-![Tests](https://img.shields.io/badge/tests-62%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-80%20passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-79%25-green)
 
 Application web de gestion de séances de coaching sportif. 3 rôles : CLIENT, COACH, ADMIN.
@@ -11,9 +11,9 @@ Application web de gestion de séances de coaching sportif. 3 rôles : CLIENT, C
 | Couche | Technologies |
 |--------|-------------|
 | Backend | Node.js 20 · Express · TypeScript · Prisma · PostgreSQL 16 |
-| Auth | JWT (access 15 min + refresh 7 j) · bcrypt (cost 10) |
+| Auth | JWT HttpOnly cookies · CSRF double-submit · bcrypt (cost 10) |
 | Validation | Zod (backend + frontend) |
-| Tests | Vitest · Supertest (45 tests) |
+| Tests | Vitest · Supertest (80 tests) |
 | Frontend | React 18 · Vite · TypeScript · TailwindCSS · React Router · React Hook Form · Axios |
 | Infra | Docker · Docker Compose · Nginx |
 
@@ -99,12 +99,35 @@ DELETE /api/bookings/:id           Annuler réservation
 
 GET    /api/users                  Liste utilisateurs (ADMIN)
 GET    /api/users/me               Mon profil
+POST   /api/users/me/avatar        Upload avatar (multipart/form-data)
+DELETE /api/users/me/avatar        Supprimer avatar
 PUT    /api/users/:id              Modifier utilisateur (ADMIN)
 DELETE /api/users/:id              Supprimer utilisateur (ADMIN)
+
+POST   /api/sessions/:id/cover     Upload cover séance (COACH owner|ADMIN)
+DELETE /api/sessions/:id/cover     Supprimer cover séance (COACH owner|ADMIN)
+
+GET    /api/sports                 Liste des sports disponibles
 
 GET    /health                     Health check
 GET    /api/docs                   Swagger UI
 ```
+
+## Authentification
+
+L'application utilise des **cookies HttpOnly** — jamais de token en `localStorage`.
+
+| Cookie | HttpOnly | SameSite | TTL | Chemin |
+|--------|----------|----------|-----|--------|
+| `access_token` | ✅ | Lax | 15 min | `/` |
+| `refresh_token` | ✅ | Strict | 7 jours | `/api/auth` |
+| `csrf_token` | ❌ (JS-readable) | Strict | 15 min | `/` |
+
+**CSRF** : schéma OWASP Double-Submit Cookie. À chaque requête mutante (`POST/PUT/PATCH/DELETE`), le frontend lit `csrf_token` via `document.cookie` et l'envoie dans le header `X-CSRF-Token`. Le backend vérifie que les deux valeurs correspondent (403 `CSRF_INVALID` sinon).
+
+**Bypass CSRF** : méthodes sûres (`GET/HEAD/OPTIONS`), requêtes Bearer (clients API, suite de tests), requêtes sans cookie de session (→ le middleware d'auth retourne 401).
+
+**Refresh silencieux** : sur réponse 401, l'intercepteur Axios appelle `/api/auth/refresh` (cookie `refresh_token` envoyé automatiquement), met en file les requêtes parallèles, puis les rejoue. Redirect `/login` si le refresh échoue.
 
 ## Lancer les tests
 
@@ -114,6 +137,32 @@ npm test
 # ou avec couverture :
 npm run test:coverage
 ```
+
+## Médias
+
+### Stratégie de stockage
+
+| Ressource | Dimensions | Format | Limite | Chemin |
+|-----------|-----------|--------|--------|--------|
+| Avatar utilisateur | 512 × 512 px (cover) | WebP q85 | 2 Mo | `/uploads/avatars/` |
+| Cover de séance | 1600 × 900 px (inside) | WebP q80 | 5 Mo | `/uploads/sessions/` |
+
+**Sécurité :**
+- Validation MIME côté serveur (`multer fileFilter`) — seuls JPEG, PNG et WebP acceptés
+- Nommage hashé `{id}-{timestamp}.webp` — jamais le nom original (prévention path traversal)
+- `path.resolve` + `startsWith(UPLOADS_BASE)` avant toute suppression de fichier
+- Headers `Cache-Control: public, max-age=31536000, immutable` (noms immuables)
+
+**Images de sport :**  
+Mapping `sport → URL Unsplash désaturée` côté frontend (`sat=-100`). La séance hérite de l'image du sport si aucune cover custom n'est uploadée. Fallback : image gym générique.
+
+### Migration vers S3 (production)
+
+En développement, les fichiers sont stockés dans `backend/uploads/`. Pour la production :
+
+1. Remplacer `processAvatar` / `processSessionCover` par un upload vers S3 via `@aws-sdk/client-s3`
+2. L'URL stockée en DB passe de `/uploads/avatars/xxx.webp` à `https://cdn.example.com/avatars/xxx.webp`
+3. Aucun changement frontend requis (URL opaque dans les deux cas)
 
 ## Choix techniques
 
@@ -125,6 +174,7 @@ Résumé :
 - **AppError centralisée** + middleware `errorHandler` pour un format d'erreur uniforme
 - **Swagger UI** sur `/api/docs` avec fichier `openapi.yaml` versionné
 - **Seed idempotent** via `upsert` (relançable sans erreur)
+- **Médias locaux** avec pipeline multer + sharp, migration S3 prévue en production
 
 ## Documentation
 

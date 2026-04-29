@@ -31,9 +31,10 @@ export const loginSchema = z.object({
   }),
 });
 
+// Refresh token comes from the HttpOnly cookie; body field kept as optional fallback
 export const refreshSchema = z.object({
   body: z.object({
-    refreshToken: z.string().min(1, 'Refresh token requis'),
+    refreshToken: z.string().optional(),
   }),
 });
 

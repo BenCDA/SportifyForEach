@@ -1,29 +1,28 @@
 import axios from 'axios';
+import { getCookie } from '../utils/cookies';
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? '/api',
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 });
 
+// Attach CSRF token on every mutating request (Double-Submit Cookie pattern).
+const SAFE_METHODS = new Set(['get', 'head', 'options']);
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (!SAFE_METHODS.has((config.method ?? 'get').toLowerCase())) {
+    const csrf = getCookie('csrf_token');
+    if (csrf) config.headers['X-CSRF-Token'] = csrf;
   }
   return config;
 });
 
+// Silent token refresh on 401 with parallel-request queuing.
 let isRefreshing = false;
-let failedQueue: Array<{ resolve: (token: string) => void; reject: (err: unknown) => void }> = [];
+let failedQueue: Array<{ resolve: () => void; reject: (err: unknown) => void }> = [];
 
-function processQueue(error: unknown, token: string | null = null): void {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token!);
-    }
-  });
+function processQueue(error: unknown): void {
+  failedQueue.forEach((p) => (error ? p.reject(error) : p.resolve()));
   failedQueue = [];
 }
 
@@ -33,44 +32,42 @@ apiClient.interceptors.response.use(
     if (!axios.isAxiosError(error)) return Promise.reject(error);
 
     const originalRequest = error.config as typeof error.config & { _retry?: boolean };
-    if (error.response?.status === 401 && !originalRequest?._retry) {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) return Promise.reject(error);
-
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then((token) => {
-          originalRequest!.headers!['Authorization'] = `Bearer ${token}`;
-          return apiClient(originalRequest!);
-        });
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      try {
-        const { data } = await axios.post<{ data: { accessToken: string } }>(
-          `${import.meta.env.VITE_API_URL ?? '/api'}/auth/refresh`,
-          { refreshToken },
-        );
-        const newToken = data.data.accessToken;
-        localStorage.setItem('accessToken', newToken);
-        apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-        processQueue(null, newToken);
-        return apiClient(originalRequest!);
-      } catch (refreshError) {
-        processQueue(refreshError, null);
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
-      }
+    // Skip refresh for session-probe calls — AuthContext handles the 401 itself.
+    if ((originalRequest as { _noRefresh?: boolean })?._noRefresh) {
+      return Promise.reject(error);
     }
 
-    return Promise.reject(error);
+    if (error.response?.status !== 401 || originalRequest?._retry) {
+      return Promise.reject(error);
+    }
+
+    if (isRefreshing) {
+      return new Promise<void>((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      }).then(() => apiClient(originalRequest!));
+    }
+
+    originalRequest._retry = true;
+    isRefreshing = true;
+
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_API_URL ?? '/api'}/auth/refresh`,
+        {},
+        { withCredentials: true },
+      );
+      processQueue(null);
+      return apiClient(originalRequest!);
+    } catch (refreshError) {
+      processQueue(refreshError);
+      const publicPaths = ['/login', '/register'];
+      if (!publicPaths.includes(window.location.pathname)) {
+        window.location.href = '/login';
+      }
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
   },
 );
 

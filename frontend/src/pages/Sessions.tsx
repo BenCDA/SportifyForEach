@@ -7,6 +7,7 @@ import { SessionCard } from '../components/SessionCard';
 import { SessionRowSkeleton } from '../components/Skeleton';
 import { BookingModal } from '../components/BookingModal';
 import { Pagination } from '../components/Pagination';
+import { DateRangePicker, type DateRange } from '../components/ui/DateRangePicker';
 import { formatSessionDate, cn } from '../lib/utils';
 
 const SKELETON_KEYS = ['sk-1', 'sk-2', 'sk-3', 'sk-4', 'sk-5', 'sk-6'];
@@ -19,7 +20,7 @@ export function Sessions() {
   const [meta, setMeta] = useState({ page: 1, limit: 10, total: 0 });
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ from: '', to: '' });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
@@ -38,8 +39,8 @@ export function Sessions() {
     setLoading(true);
     try {
       const params: Record<string, unknown> = { page, limit: 10 };
-      if (filters.from) params.from = filters.from;
-      if (filters.to) params.to = filters.to;
+      if (dateRange?.from) params.from = dateRange.from.toISOString();
+      if (dateRange?.to) params.to = dateRange.to.toISOString();
       if (searchQuery) params.q = searchQuery;
       const res = await sessionsApi.list(params);
       setSessions(res.data.data);
@@ -49,7 +50,7 @@ export function Sessions() {
     } finally {
       setLoading(false);
     }
-  }, [page, filters, searchQuery]);
+  }, [page, dateRange, searchQuery]);
 
   useEffect(() => { void fetchSessions(); }, [fetchSessions]);
 
@@ -58,8 +59,8 @@ export function Sessions() {
     if (session) { setSelectedSession(session); setBookingModalOpen(true); }
   };
 
-  const resetFilters = () => { setFilters({ from: '', to: '' }); setSearchInput(''); setSearchQuery(''); setPage(1); };
-  const hasFilters = filters.from || filters.to || searchQuery;
+  const resetFilters = () => { setDateRange(undefined); setSearchInput(''); setSearchQuery(''); setPage(1); };
+  const hasFilters = !!(dateRange?.from) || !!searchQuery;
   const plural = meta.total === 1 ? '' : 's';
 
   return (
@@ -139,18 +140,11 @@ export function Sessions() {
               </button>
             )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div>
-              <label htmlFor="filter-from" className="input-label">À partir du</label>
-              <input id="filter-from" type="datetime-local" className="input-field text-sm"
-                value={filters.from} onChange={(e) => { setFilters((f) => ({ ...f, from: e.target.value })); setPage(1); }} />
-            </div>
-            <div>
-              <label htmlFor="filter-to" className="input-label">Jusqu&apos;au</label>
-              <input id="filter-to" type="datetime-local" className="input-field text-sm"
-                value={filters.to} onChange={(e) => { setFilters((f) => ({ ...f, to: e.target.value })); setPage(1); }} />
-            </div>
-          </div>
+          <DateRangePicker
+            value={dateRange}
+            onChange={(r) => { setDateRange(r); setPage(1); }}
+            placeholder="Sélectionner une période"
+          />
         </div>
       )}
 
@@ -175,7 +169,7 @@ interface ContentProps {
   viewMode: ViewMode;
   user: { role: string } | null;
   openBooking: (id: string) => void;
-  hasFilters: string;
+  hasFilters: boolean;
   resetFilters: () => void;
 }
 

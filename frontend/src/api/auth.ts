@@ -12,8 +12,6 @@ export interface User {
 
 export interface AuthResponse {
   data: {
-    accessToken: string;
-    refreshToken: string;
     user: User;
   };
 }
@@ -35,8 +33,8 @@ export const authApi = {
   login: (data: { email: string; password: string }) =>
     apiClient.post<AuthResponse>('/auth/login', data),
 
-  logout: (refreshToken: string) =>
-    apiClient.post('/auth/logout', { refreshToken }),
+  logout: () =>
+    apiClient.post('/auth/logout'),
 
-  me: () => apiClient.get<{ data: User }>('/auth/me'),
+  me: () => apiClient.get<{ data: User }>('/auth/me', { _noRefresh: true } as object),
 };

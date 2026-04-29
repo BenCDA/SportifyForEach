@@ -10,6 +10,7 @@ import { SessionCard } from '../components/SessionCard';
 import { SessionCardSkeleton } from '../components/Skeleton';
 import { Pagination } from '../components/Pagination';
 import { LocationAutocomplete } from '../components/LocationAutocomplete';
+import { DateTimePicker } from '../components/ui/DateTimePicker';
 import { getSportImage } from '../constants/sportImages';
 import axios from 'axios';
 
@@ -26,7 +27,7 @@ const sessionSchema = z.object({
   sport:        z.string().optional(),
   description:  z.string().optional(),
   requirements: z.string().optional(),
-  startAt:      z.string().min(1, 'Date requise'),
+  startAt:      z.string().min(1, 'Date et heure requises'),
   durationMin:  z.number().int().min(1, 'Durée requise'),
   capacity:     z.number().int().min(1, 'Capacité requise'),
   locationName: z.string().min(1, 'Nom du lieu requis'),
@@ -225,8 +226,13 @@ export function CoachPlanning() {
 
               <div className="grid grid-cols-2 gap-5">
                 <div>
-                  <label htmlFor="s-start" className="input-label">Date et heure *</label>
-                  <input {...register('startAt')} id="s-start" type="datetime-local" className="input-field" />
+                  <DateTimePicker
+                    id="s-start"
+                    label="Date et heure *"
+                    value={watch('startAt') ? new Date(watch('startAt')) : undefined}
+                    onChange={(date) => setValue('startAt', date ? date.toISOString() : '', { shouldValidate: true })}
+                    disablePast
+                  />
                   {errors.startAt && <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.08em] text-accent">{errors.startAt.message}</p>}
                 </div>
                 <div>

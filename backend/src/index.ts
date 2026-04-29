@@ -3,12 +3,14 @@ dotenv.config();
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import path from 'path';
 import fs from 'fs';
 import yaml from 'yaml';
 import swaggerUi from 'swagger-ui-express';
 import { env } from './config/env';
 import { errorHandler } from './middlewares/errorHandler';
+import { csrfProtect } from './middlewares/csrf';
 import authRouter from './modules/auth/auth.route';
 import usersRouter from './modules/users/users.route';
 import sessionsRouter from './modules/sessions/sessions.route';
@@ -21,7 +23,10 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 app.use(cors({ origin: env.corsOrigin, credentials: true }));
+app.use(cookieParser());
 app.use(express.json());
+// CSRF protection — skips safe methods and Bearer-authenticated requests
+app.use(csrfProtect);
 
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads'), {
   maxAge: '1y',

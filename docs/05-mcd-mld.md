@@ -11,6 +11,7 @@ erDiagram
         string firstName
         string lastName
         enum role
+        string avatarUrl
         datetime createdAt
     }
 
@@ -25,6 +26,7 @@ erDiagram
         uuid id PK
         uuid coachId FK
         string title
+        string sport
         string description
         string requirements
         datetime startAt
@@ -36,6 +38,7 @@ erDiagram
         string postalCode
         float latitude
         float longitude
+        string coverImageUrl
         datetime createdAt
     }
 
@@ -65,7 +68,7 @@ erDiagram
 ## MLD (Modèle Logique de Données)
 
 ```
-USER(id, email*, passwordHash, firstName, lastName, role, createdAt)
+USER(id, email*, passwordHash, firstName, lastName, role, avatarUrl, createdAt)
   PK: id
   UK: email
   role ∈ {CLIENT, COACH, ADMIN}
@@ -75,9 +78,9 @@ COACH_PROFILE(id, userId#, bio, specialties[])
   FK: userId → USER(id) ON DELETE CASCADE
   UK: userId
 
-SESSION(id, coachId#, title, description, requirements, startAt,
+SESSION(id, coachId#, title, sport, description, requirements, startAt,
         durationMin, capacity, locationName, address, city, postalCode,
-        latitude, longitude, createdAt)
+        latitude, longitude, coverImageUrl, createdAt)
   PK: id
   FK: coachId → USER(id) ON DELETE CASCADE
   INDEX: startAt, city
