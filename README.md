@@ -73,8 +73,6 @@ npm run dev
 | Email | Mot de passe | Rôle |
 |-------|-------------|------|
 | admin@sportify.fr | Admin123! | ADMIN |
-| bencoach@sportify.com | Coach123! | COACH |
-| benjamincardoso@sportify.com | Client123! | CLIENT |
 
 ## Principaux endpoints
 
