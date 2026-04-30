@@ -18,7 +18,9 @@ export const usersApi = {
   uploadAvatar: (blob: Blob) => {
     const fd = new FormData();
     fd.append('avatar', blob, 'avatar.webp');
-    return apiClient.post<{ data: { avatarUrl: string } }>('/users/me/avatar', fd);
+    return apiClient.post<{ data: { avatarUrl: string } }>('/users/me/avatar', fd, {
+      headers: { 'Content-Type': undefined },
+    });
   },
 
   deleteAvatar: () => apiClient.delete('/users/me/avatar'),

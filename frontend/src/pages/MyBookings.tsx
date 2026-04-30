@@ -3,10 +3,21 @@ import { toast } from 'sonner';
 import { MapPin, Clock, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { bookingsApi, Booking } from '../api/bookings';
+import { BookingModal, ModalMode } from '../components/BookingModal';
 import { Pagination } from '../components/Pagination';
 import { Skeleton } from '../components/Skeleton';
 import { formatSessionDate, cn } from '../lib/utils';
-import axios from 'axios';
+
+function BookingBadge({ isPast }: Readonly<{ isPast: boolean }>) {
+  const cls = isPast
+    ? 'border-ink/10 text-faint'
+    : 'border-emerald-300 text-emerald-700 bg-emerald-50';
+  return (
+    <span className={cn('shrink-0 font-mono text-[10px] uppercase tracking-[0.08em] px-2 py-0.5 border', cls)}>
+      {isPast ? 'Passée' : 'À venir'}
+    </span>
+  );
+}
 
 function BookingRowSkeleton() {
   return (
@@ -28,7 +39,8 @@ export function MyBookings() {
   const [meta, setMeta] = useState({ page: 1, limit: 10, total: 0 });
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const fetchBookings = useCallback(async () => {
     setLoading(true);
@@ -45,23 +57,9 @@ export function MyBookings() {
 
   useEffect(() => { void fetchBookings(); }, [fetchBookings]);
 
-  const handleCancel = async (bookingId: string) => {
-    if (!confirm('Annuler cette réservation ?')) return;
-    setCancellingId(bookingId);
-    try {
-      await bookingsApi.cancel(bookingId);
-      toast.success('Réservation annulée');
-      void fetchBookings();
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        toast.error(
-          (err.response?.data as { error?: { message?: string } })?.error?.message ??
-            "Erreur lors de l'annulation",
-        );
-      }
-    } finally {
-      setCancellingId(null);
-    }
+  const openModal = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setModalOpen(true);
   };
 
   const now = new Date();
@@ -81,11 +79,12 @@ export function MyBookings() {
         )}
       </div>
 
-      {loading ? (
+      {loading && (
         <div>
           {['sk-1', 'sk-2', 'sk-3', 'sk-4'].map((k) => <BookingRowSkeleton key={k} />)}
         </div>
-      ) : bookings.length === 0 ? (
+      )}
+      {!loading && bookings.length === 0 && (
         <div className="py-24 text-center">
           <p className="font-serif italic text-3xl text-ink/30 mb-3">Rien ici. Pour l&apos;instant.</p>
           <p className="font-sans text-sm text-muted mb-6">Vous n&apos;avez pas encore réservé de séance.</p>
@@ -93,16 +92,19 @@ export function MyBookings() {
             Voir les séances <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
           </Link>
         </div>
-      ) : (
+      )}
+      {!loading && bookings.length > 0 && (
         <>
           {bookings.map((booking) => {
             const startDate = new Date(booking.session.startAt);
             const isPast = startDate < now;
             return (
-              <div
+              <button
                 key={booking.id}
+                type="button"
+                onClick={() => openModal(booking)}
                 className={cn(
-                  'border-b border-ink/8 px-4 py-5 transition-colors duration-150',
+                  'w-full text-left border-b border-ink/8 px-4 py-5 transition-colors duration-150',
                   isPast ? 'opacity-50' : 'hover:bg-ink/[0.02]',
                 )}
               >
@@ -112,17 +114,7 @@ export function MyBookings() {
                       <h3 className="font-sans font-medium text-sm text-ink truncate">
                         {booking.session.title}
                       </h3>
-                      {(() => {
-                        const badgeCls = isPast
-                          ? 'border-ink/10 text-faint'
-                          : 'border-emerald-300 text-emerald-700 bg-emerald-50';
-                        const badgeLabel = isPast ? 'Passée' : 'À venir';
-                        return (
-                          <span className={cn('shrink-0 font-mono text-[10px] uppercase tracking-[0.08em] px-2 py-0.5 border', badgeCls)}>
-                            {badgeLabel}
-                          </span>
-                        );
-                      })()}
+                      <BookingBadge isPast={isPast} />
                     </div>
                     <div className="space-y-1">
                       <p className="font-mono text-[11px] uppercase tracking-[0.07em] text-muted flex items-center gap-2">
@@ -135,22 +127,31 @@ export function MyBookings() {
                       </p>
                     </div>
                   </div>
-                  {!isPast && (
-                    <button
-                      onClick={() => handleCancel(booking.id)}
-                      disabled={cancellingId === booking.id}
-                      className="shrink-0 font-mono text-[10px] uppercase tracking-[0.1em] text-accent hover:opacity-70 transition-opacity disabled:opacity-40 h-9 px-3 border border-accent/30 hover:border-accent"
-                    >
-                      {cancellingId === booking.id ? '…' : 'Annuler'}
-                    </button>
-                  )}
+                  <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.1em] text-muted border border-ink/15 h-9 px-3 flex items-center">
+                    Détails →
+                  </span>
                 </div>
-              </div>
+              </button>
             );
           })}
           <Pagination page={page} total={meta.total} limit={meta.limit} onPageChange={setPage} />
         </>
       )}
+
+      {selectedBooking && (() => {
+        const isPast = new Date(selectedBooking.session.startAt) < now;
+        const mode: ModalMode = isPast ? 'my-booking-past' : 'my-booking-upcoming';
+        return (
+          <BookingModal
+            session={selectedBooking.session}
+            open={modalOpen}
+            onClose={() => setModalOpen(false)}
+            mode={mode}
+            bookingId={selectedBooking.id}
+            onCancelled={() => { void fetchBookings(); }}
+          />
+        );
+      })()}
     </div>
   );
 }

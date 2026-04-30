@@ -14,18 +14,21 @@ enum Role {
 }
 
 model User {
-  id             String         @id @default(uuid())
-  email          String         @unique
-  passwordHash   String
-  firstName      String
-  lastName       String
-  role           Role           @default(CLIENT)
-  avatarUrl      String?
-  createdAt      DateTime       @default(now())
-  coachProfile   CoachProfile?
-  sessions       Session[]      @relation("CoachSessions")
-  bookings       Booking[]
-  refreshTokens  RefreshToken[]
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  role          Role           @default(CLIENT)
+  avatarUrl     String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+  coachProfile  CoachProfile?
+  sessions      Session[]      @relation("CoachSessions")
+  bookings      Booking[]
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
 }
 
 model CoachProfile {
@@ -33,29 +36,31 @@ model CoachProfile {
   userId      String   @unique
   bio         String?
   specialties String[]
+  updatedAt   DateTime @updatedAt
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Session {
-  id             String    @id @default(uuid())
-  coachId        String
-  title          String
-  sport          String?
-  description    String?
-  requirements   String?
-  startAt        DateTime
-  durationMin    Int
-  capacity       Int
-  locationName   String
-  address        String
-  city           String
-  postalCode     String
-  latitude       Float?
-  longitude      Float?
-  coverImageUrl  String?
-  createdAt      DateTime  @default(now())
-  coach          User      @relation("CoachSessions", fields: [coachId], references: [id], onDelete: Cascade)
-  bookings       Booking[]
+  id            String    @id @default(uuid())
+  coachId       String
+  title         String
+  sport         String?
+  description   String?
+  requirements  String?
+  startAt       DateTime
+  durationMin   Int
+  capacity      Int
+  locationName  String
+  address       String
+  city          String
+  postalCode    String
+  latitude      Float?
+  longitude     Float?
+  coverImageUrl String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  coach         User      @relation("CoachSessions", fields: [coachId], references: [id], onDelete: Cascade)
+  bookings      Booking[]
 
   @@index([startAt])
   @@index([city])
@@ -79,8 +84,24 @@ model RefreshToken {
   tokenHash String    @unique
   expiresAt DateTime
   revokedAt DateTime?
+  userAgent String?
+  ip        String?
   createdAt DateTime  @default(now())
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
 }

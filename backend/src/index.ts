@@ -16,6 +16,11 @@ import usersRouter from './modules/users/users.route';
 import sessionsRouter from './modules/sessions/sessions.route';
 import bookingsRouter from './modules/bookings/bookings.route';
 import sportsRouter from './modules/sports/sports.route';
+import geocodingRouter from './modules/geocoding/geocoding.route';
+
+// Ensure upload directories exist at startup (sharp.toFile requires them)
+fs.mkdirSync(path.join(process.cwd(), 'uploads', 'avatars'), { recursive: true });
+fs.mkdirSync(path.join(process.cwd(), 'uploads', 'sessions'), { recursive: true });
 
 const app = express();
 
@@ -51,6 +56,7 @@ app.use('/api/users', usersRouter);
 app.use('/api/sessions', sessionsRouter);
 app.use('/api/bookings', bookingsRouter);
 app.use('/api/sports', sportsRouter);
+app.use('/api/geocoding', geocodingRouter);
 
 app.use(errorHandler);
 

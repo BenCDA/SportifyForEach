@@ -34,7 +34,9 @@ COPY --chown=appuser:appgroup prisma ./prisma/
 COPY --chown=appuser:appgroup src/openapi.yaml ./dist/openapi.yaml
 COPY --chown=appuser:appgroup entrypoint.sh ./entrypoint.sh
 
-RUN chmod +x entrypoint.sh
+RUN chmod +x entrypoint.sh && \
+    mkdir -p /app/uploads/avatars /app/uploads/sessions && \
+    chown -R appuser:appgroup /app/uploads
 
 USER appuser
 

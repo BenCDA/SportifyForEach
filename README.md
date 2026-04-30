@@ -73,11 +73,8 @@ npm run dev
 | Email | Mot de passe | Rôle |
 |-------|-------------|------|
 | admin@sportify.fr | Admin123! | ADMIN |
-| marie.dupont@sportify.fr | Coach123! | COACH |
-| jean.martin@sportify.fr | Coach123! | COACH |
-| alice.bernard@example.com | Client123! | CLIENT |
-| bob.leroy@example.com | Client123! | CLIENT |
-| charlie.petit@example.com | Client123! | CLIENT |
+| bencoach@sportify.com | Coach123! | COACH |
+| benjamincardoso@sportify.com | Client123! | CLIENT |
 
 ## Principaux endpoints
 
@@ -128,6 +125,15 @@ L'application utilise des **cookies HttpOnly** — jamais de token en `localStor
 **Bypass CSRF** : méthodes sûres (`GET/HEAD/OPTIONS`), requêtes Bearer (clients API, suite de tests), requêtes sans cookie de session (→ le middleware d'auth retourne 401).
 
 **Refresh silencieux** : sur réponse 401, l'intercepteur Axios appelle `/api/auth/refresh` (cookie `refresh_token` envoyé automatiquement), met en file les requêtes parallèles, puis les rejoue. Redirect `/login` si le refresh échoue.
+
+## Base de données propre
+
+```bash
+cd backend
+npm run db:reset   # migrate reset --force + prisma db seed
+```
+
+Après `db:reset` : **3 utilisateurs** (ADMIN, COACH, CLIENT), **0 séance**, **0 réservation**.
 
 ## Lancer les tests
 

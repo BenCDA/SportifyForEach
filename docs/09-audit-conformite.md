@@ -13,8 +13,8 @@
 | Exigence | Statut | Emplacement | Preuve | Commentaire |
 |----------|--------|-------------|--------|-------------|
 | Acteur : Administrateur | ✅ | `prisma/schema.prisma` — enum `Role.ADMIN` | Seed : `admin@sportify.fr` | — |
-| Acteur : Coach | ✅ | `prisma/schema.prisma` — enum `Role.COACH` + `CoachProfile` | Seed : `marie.dupont@sportify.fr` | — |
-| Acteur : Client | ✅ | `prisma/schema.prisma` — enum `Role.CLIENT` (default) | Seed : `alice.bernard@example.com` | — |
+| Acteur : Coach | ✅ | `prisma/schema.prisma` — enum `Role.COACH` + `CoachProfile` | Seed : `bencoach@sportify.com` | — |
+| Acteur : Client | ✅ | `prisma/schema.prisma` — enum `Role.CLIENT` (default) | Seed : `benjamincardoso@sportify.com` | — |
 
 #### Fonctionnalités Client
 
@@ -82,7 +82,7 @@
 | Diagramme de classes | ✅ | `docs/04-class-diagram.md` | Mermaid `classDiagram` | `CoachProfile.specialties[]` + classe `RefreshToken` ajoutés ; synchronisé avec le schéma réel |
 | MCD | ✅ | `docs/05-mcd-mld.md` | Mermaid `erDiagram` | `REFRESH_TOKEN`, champs location décomposés et `specialties[]` ajoutés |
 | User stories | ✅ | `docs/02-user-stories.md` | 15 US avec critères d'acceptation | Couvre les 3 acteurs |
-| Maquettes / wireframes | ✅ | `docs/07-wireframes.md` | ASCII wireframes pour toutes les pages | — |
+| Maquettes / wireframes | ✅ | `docs/07-wireframes.md` + [Figma](https://www.figma.com/design/AEHgOdOYem2wuE0qpEnYjU) | 14 écrans mid-fi Figma · DA off-white · Desktop 1440 + Mobile 375 · annotations interactions | react-day-picker v9, Leaflet, DateRangePicker, modale, sidebar admin |
 
 ---
 
@@ -153,7 +153,7 @@
 | README complet | ✅ | `README.md` | Description, install, exécution, choix techniques | — |
 | Tests | ✅ | `backend/tests/` | 80 tests verts, 79 % coverage | — |
 | Dockerfile / procédure déploiement | ✅ | `backend/Dockerfile`, `frontend/Dockerfile`, `docker-compose.yml` | `docker compose up --build` fonctionnel | ⚠️ `.env.example` présent ? À vérifier |
-| Diagrammes (UML, MCD…) | ✅ | `docs/` (9 fichiers) | Cas d'usage, classes, MCD/MLD, archi, wireframes, audit | Synchronisés avec le schéma réel (RefreshToken, location, specialties) |
+| Diagrammes (UML, MCD…) | ✅ | `docs/` (10 fichiers) | Cas d'usage, classes, MCD/MLD, archi, wireframes, audit DB | MCD mis à jour : AuditLog, updatedAt, deletedAt, userAgent, ip |
 
 ---
 

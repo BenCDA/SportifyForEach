@@ -31,10 +31,10 @@ export const authApi = {
     apiClient.post<AuthResponse>('/auth/register', data),
 
   login: (data: { email: string; password: string }) =>
-    apiClient.post<AuthResponse>('/auth/login', data),
+    apiClient.post<AuthResponse>('/auth/login', data, { _noRefresh: true } as object),
 
   logout: () =>
-    apiClient.post('/auth/logout'),
+    apiClient.post('/auth/logout', undefined, { _noRefresh: true } as object),
 
   me: () => apiClient.get<{ data: User }>('/auth/me', { _noRefresh: true } as object),
 };

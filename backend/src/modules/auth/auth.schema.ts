@@ -15,7 +15,7 @@ export const registerSchema = z.object({
       firstName:  z.string().min(1, 'Prénom requis'),
       lastName:   z.string().min(1, 'Nom requis'),
       role:       z.enum(['CLIENT', 'COACH']).default('CLIENT'),
-      specialties: z.array(z.enum(SPORTS)).min(1).max(3).optional(),
+      specialties: z.array(z.enum(SPORTS)).max(3).optional(),
       bio:        z.string().optional(),
     })
     .refine(

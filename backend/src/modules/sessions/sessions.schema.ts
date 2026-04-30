@@ -17,7 +17,7 @@ const locationFields = {
   locationName: z.string().min(1, 'Nom du lieu requis'),
   address:      z.string().min(1, 'Adresse requise'),
   city:         z.string().min(1, 'Ville requise'),
-  postalCode:   z.string().min(1, 'Code postal requis'),
+  postalCode:   z.string().regex(/^\d{5}$/, 'Le code postal doit contenir exactement 5 chiffres'),
   latitude:     z.number().optional(),
   longitude:    z.number().optional(),
 };
@@ -48,7 +48,7 @@ export const updateSessionSchema = z.object({
     locationName: z.string().min(1).optional(),
     address:      z.string().min(1).optional(),
     city:         z.string().min(1).optional(),
-    postalCode:   z.string().min(1).optional(),
+    postalCode:   z.string().regex(/^\d{5}$/).optional(),
     latitude:     z.number().optional(),
     longitude:    z.number().optional(),
   }),

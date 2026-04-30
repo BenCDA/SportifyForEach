@@ -33,7 +33,7 @@ const sessionSchema = z.object({
   locationName: z.string().min(1, 'Nom du lieu requis'),
   address:      z.string().min(1, 'Adresse requise'),
   city:         z.string().min(1, 'Ville requise'),
-  postalCode:   z.string().min(1, 'Code postal requis'),
+  postalCode:   z.string().regex(/^\d{5}$/, 'Le code postal doit contenir exactement 5 chiffres'),
   latitude:     z.number().optional(),
   longitude:    z.number().optional(),
 });
@@ -287,7 +287,19 @@ export function CoachPlanning() {
 
                   <div>
                     <label htmlFor="s-postal" className="input-label">Code postal *</label>
-                    <input {...register('postalCode')} id="s-postal" className="input-field" placeholder="59000" />
+                    <input
+                      {...register('postalCode', {
+                        onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                          e.target.value = e.target.value.replace(/\D/g, '').slice(0, 5);
+                        },
+                      })}
+                      id="s-postal"
+                      className="input-field"
+                      placeholder="59000"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={5}
+                    />
                     {errors.postalCode && <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.08em] text-accent">{errors.postalCode.message}</p>}
                   </div>
                 </div>

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Search, MapPin, Loader2 } from 'lucide-react';
+import { Search, MapPin, Loader2, AlertCircle } from 'lucide-react';
+import apiClient from '../api/client';
 
 interface LocationFields {
   address: string;
@@ -37,6 +38,7 @@ export function LocationAutocomplete({ onSelect }: Readonly<LocationAutocomplete
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [error, setError] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -51,12 +53,10 @@ export function LocationAutocomplete({ onSelect }: Readonly<LocationAutocomplete
   const doSearch = useCallback(async (q: string) => {
     if (q.length < 3) { setResults([]); setOpen(false); return; }
     setLoading(true);
+    setError(false);
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&addressdetails=1&limit=5&countrycodes=fr`,
-        { headers: { 'Accept-Language': 'fr' } },
-      );
-      const data = (await res.json()) as NominatimResult[];
+      const resp = await apiClient.get<{ data: NominatimResult[] }>('/geocoding/search', { params: { q } });
+      const data = resp.data.data;
       setResults(data.map((item) => {
         const addr = item.address;
         const streetParts = [addr.house_number, addr.road].filter(Boolean);
@@ -71,7 +71,7 @@ export function LocationAutocomplete({ onSelect }: Readonly<LocationAutocomplete
       }));
       setOpen(true);
     } catch {
-      /* ignore network errors */
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -80,6 +80,7 @@ export function LocationAutocomplete({ onSelect }: Readonly<LocationAutocomplete
   const handleChange = (v: string) => {
     setQuery(v);
     setConfirmed(false);
+    setError(false);
     clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => { void doSearch(v); }, 400);
   };
@@ -110,8 +111,11 @@ export function LocationAutocomplete({ onSelect }: Readonly<LocationAutocomplete
         {loading && (
           <Loader2 className="absolute right-0 w-4 h-4 text-faint animate-spin" strokeWidth={1.5} />
         )}
-        {confirmed && !loading && (
+        {confirmed && !loading && !error && (
           <MapPin className="absolute right-0 w-4 h-4 text-emerald-600" strokeWidth={1.5} />
+        )}
+        {error && !loading && (
+          <AlertCircle className="absolute right-0 w-4 h-4 text-red-500" strokeWidth={1.5} />
         )}
       </div>
 

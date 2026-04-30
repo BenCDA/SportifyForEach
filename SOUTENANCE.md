@@ -14,22 +14,25 @@
 - Montrer Swagger UI sur `http://localhost:3000/api/docs`
 
 ### 2. Authentification (3 min)
-- **Register coach** : `marie.dupont@sportify.fr` / `Coach123!` → montrer spécialités requises
-- Inspecter le réseau : la réponse contient `accessToken` + `refreshToken`, jamais `passwordHash`
 - **Login admin** : `admin@sportify.fr` / `Admin123!`
-- Montrer le token JWT décodé sur jwt.io : payload `{ userId, role, iat, exp }`
+- Inspecter DevTools → onglet Application → Cookies : `access_token` (HttpOnly, pas lisible JS), `csrf_token` (lisible)
+- Inspecter le réseau : la réponse login contient `{ data: { user } }` — aucun token dans le body
+- Expliquer le Double-Submit Cookie CSRF : `csrf_token` cookie → header `X-CSRF-Token`
 - Expliquer la rotation : chaque `POST /auth/refresh` révoque l'ancien token en DB
+- **Register coach** : `bencoach@sportify.com` / `Coach123!` → montrer spécialités requises
 
 ### 3. Règles métier — Réservation (3 min)
-- Se connecter en CLIENT (`alice.bernard@example.com` / `Client123!`)
-- Aller sur `/sessions` → barre de recherche → taper "yoga" → résultats filtrés
+- Se connecter en CLIENT (`benjamincardoso@sportify.com` / `Client123!`)
+- Aller sur `/sessions` → créer d'abord une séance depuis le compte coach
+- Filtrer par date avec le DateRangePicker → taper dans la recherche
 - Réserver une séance → confirmation 2 étapes → export ICS
 - Ouvrir `backend/src/modules/bookings/bookings.service.ts` → montrer la transaction Prisma
 - Expliquer les 3 vérifications atomiques : capacité, double-booking, chevauchement horaire
 
 ### 4. Planning coach (2 min)
-- Se connecter en COACH (`jean.martin@sportify.fr` / `Coach123!`)
-- Créer une séance avec `LocationAutocomplete` (Nominatim/OpenStreetMap)
+- Se connecter en COACH (`bencoach@sportify.com` / `Coach123!`)
+- Créer une séance avec DateTimePicker (react-day-picker v9, désactive les dates passées)
+- Géocodage adresse auto via Nominatim/OpenStreetMap → lat/lng stockés en DB
 - Voir les participants → montrer que c'est restreint au propriétaire/admin
 
 ### 5. Administration (2 min)
